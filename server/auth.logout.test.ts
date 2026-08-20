@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
-import { COOKIE_NAME } from "../shared/const";
+import { COOKIE_NAME, UNAUTHED_ERR_MSG } from "../shared/const";
 import type { TrpcContext } from "./_core/context";
 
 type CookieCall = {
@@ -58,5 +58,17 @@ describe("auth.logout", () => {
       httpOnly: true,
       path: "/",
     });
+  });
+});
+
+describe("conversations without a session", () => {
+  it("rejects access to saved conversation history", async () => {
+    const ctx: TrpcContext = {
+      user: null,
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: { clearCookie: () => undefined } as TrpcContext["res"],
+    };
+
+    await expect(appRouter.createCaller(ctx).conversations.list()).rejects.toThrow(UNAUTHED_ERR_MSG);
   });
 });

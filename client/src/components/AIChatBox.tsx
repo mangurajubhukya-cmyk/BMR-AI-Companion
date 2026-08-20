@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { textForSpeech } from "@/lib/voice";
 import { cn } from "@/lib/utils";
 import { AlertCircle, Loader2, Mic, MicOff, Send, Sparkles, Square, User, Volume2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 
 export type Message = {

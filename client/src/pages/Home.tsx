@@ -6,10 +6,11 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { AIChatBox, type Message as DisplayMessage } from "@/components/AIChatBox";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { companionFailureFeedback } from "@/lib/chatFeedback";
 import { trpc } from "@/lib/trpc";
 import { startLogin } from "@/const";
 import { Loader2, LogOut, MessageCircle, MessageSquarePlus, PanelLeftClose, Pencil, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const suggestedPrompts = [
@@ -65,7 +66,8 @@ export default function Home() {
     },
     onError: (error) => {
       setPendingMessage(null);
-      toast.error("The Companion could not answer that yet.", { description: error.message });
+      const feedback = companionFailureFeedback(error.message);
+      toast.error(feedback.title, { description: feedback.description });
     },
   });
 
