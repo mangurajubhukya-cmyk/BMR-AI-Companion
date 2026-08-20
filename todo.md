@@ -1,0 +1,21 @@
+# Working Application Upgrade Checklist
+
+- [x] Confirm the usable MVP: authenticated AI chat, persistent conversations, and clear error states.
+- [x] Upgrade the static project with backend, database, and user management capability.
+- [x] Inspect the generated full-stack guidance and built-in AI model options.
+- [x] Replace the marketing landing route with a real chat workspace and conversation navigation.
+- [x] Add database tables and backend routes for conversations, messages, and AI responses.
+- [x] Connect the chat composer to an AI model and stream or return usable responses.
+- [x] Persist conversation history and let users create, select, rename, and delete conversations.
+- [ ] Test successful, empty, failed, and logged-out interaction paths.
+- [ ] Verify responsive behavior, save a checkpoint, and deliver the working update.
+- [x] Make the left sidebar visibly support chat history, selected-chat state, new-chat creation, and profile controls at the bottom.
+- [x] Add microphone dictation to the chat composer with unsupported-browser and permission-denied states.
+- [x] Add assistant voice playback with play, stop, and loading states for completed responses.
+- [ ] Test new chat, history selection, profile sign-out, voice input, and voice output paths.
+- [x] Expose the chat-history sidebar, new-chat control, and profile section through a functional mobile drawer.
+- [ ] Verify a fully authenticated end-to-end chat: send a prompt, save the answer, and confirm it remains after reload.
+- [ ] Run browser checks for empty, failed, and logged-out states, including AI/API failure handling and a missing conversation.
+- [x] Add an explicit voice playback starting state before browser speech begins.
+- [ ] Manually verify new chat, history selection, rename/delete, sign-out, microphone permission paths, and assistant speech playback.
+- [x] Fix the new-chat action so it preserves an intentional empty composer instead of auto-selecting an existing conversation.

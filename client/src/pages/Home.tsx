@@ -1,316 +1,197 @@
 /**
- * Cognitive Observatory page: an asymmetrical editorial AI product story with observatory rails,
- * evidence chips, Observatory Lime actions, and intentionally restrained motion.
+ * Manus AI Companion workspace: a real, authenticated conversation interface with persistent history.
+ * The layout keeps the Cognitive Observatory visual language while delegating rendering and composer behavior to AIChatBox.
  */
+import { useAuth } from "@/_core/hooks/useAuth";
+import { AIChatBox, type Message as DisplayMessage } from "@/components/AIChatBox";
 import { Button } from "@/components/ui/button";
-import {
-  ArrowUpRight,
-  BookOpen,
-  Bot,
-  Braces,
-  Check,
-  ChevronRight,
-  CircleDotDashed,
-  Code2,
-  Database,
-  FileText,
-  Gauge,
-  Layers3,
-  LockKeyhole,
-  Menu,
-  Network,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  Workflow,
-} from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { trpc } from "@/lib/trpc";
+import { startLogin } from "@/const";
+import { Loader2, LogOut, MessageCircle, MessageSquarePlus, PanelLeftClose, Pencil, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
-type PromptKey = "architecture" | "research" | "code";
-
-const promptLibrary: Record<PromptKey, { label: string; prompt: string; response: string }> = {
-  architecture: {
-    label: "Architecture",
-    prompt: "Map a secure agent architecture for an enterprise knowledge assistant.",
-    response:
-      "I’d separate the system into five observable layers: identity and policy, orchestration, retrieval, inference, and audit. Each layer gets its own control boundary—so teams can improve capability without weakening governance.",
-  },
-  research: {
-    label: "Research",
-    prompt: "Compare our model options and surface a decision I can defend.",
-    response:
-      "I’ll score candidates on reasoning quality, multimodal coverage, latency, unit economics, and data controls. The recommendation will include the trade-offs, the evidence used, and the next validation step—not just a leaderboard.",
-  },
-  code: {
-    label: "Code review",
-    prompt: "Review this service boundary and flag risks before we ship.",
-    response:
-      "I’ll trace data ownership, failure paths, and least-privilege assumptions. You’ll get a prioritized review: immediate risks, implementation notes, and a test plan for the release gate.",
-  },
-};
-
-const capabilities = [
-  {
-    number: "01",
-    icon: Database,
-    title: "Memory that earns its place",
-    body: "Ground every reply in a retrieval layer that keeps context useful, current, and auditable.",
-    note: "RAG / VERIFIED",
-  },
-  {
-    number: "02",
-    icon: Workflow,
-    title: "Tools with clear boundaries",
-    body: "Route search, data, and code execution through explicit actions—not improvised answers.",
-    note: "TOOLS / TRACEABLE",
-  },
-  {
-    number: "03",
-    icon: ShieldCheck,
-    title: "Safety in the system design",
-    body: "Operational guardrails, privacy controls, and red-team testing are part of every answer path.",
-    note: "POLICY / ACTIVE",
-  },
-];
-
-const metrics = [
-  { value: "< 1s", label: "Target response time", detail: "for typical, grounded questions" },
-  { value: "99.9%", label: "Reliability goal", detail: "with observable services and failover" },
-  { value: "1M", label: "Context-ready", detail: "through selective memory and retrieval" },
-];
-
-const roadmap = [
-  { phase: "01", title: "Instrument", copy: "Research, user models, and the first answer loop.", state: "Weeks 01–06" },
-  { phase: "02", title: "Ground", copy: "RAG, tool calling, safety gates, and observability.", state: "Weeks 07–16" },
-  { phase: "03", title: "Prove", copy: "Multimodal beta, evaluation suites, and customer pilots.", state: "Months 05–08" },
-  { phase: "04", title: "Expand", copy: "Enterprise workflows, scale engineering, and a V2 roadmap.", state: "After launch" },
+const suggestedPrompts = [
+  "Help me turn a vague product idea into a focused one-page brief.",
+  "Create a practical risk register for launching an internal AI assistant.",
+  "Explain the trade-offs between a faster model and a stronger reasoning model.",
 ];
 
 function SignalMark({ className = "" }: { className?: string }) {
-  return (
-    <img
-      src="/manus-storage/manus-signal-mark_a1f4b48d.png"
-      alt="Manus AI Companion signal mark"
-      className={className}
-    />
-  );
+  return <img src="/manus-storage/manus-signal-mark_a1f4b48d.png" alt="" aria-hidden="true" className={className} />;
+}
+
+function formatUpdatedAt(updatedAt: Date) {
+  const elapsed = Date.now() - new Date(updatedAt).getTime();
+  if (elapsed < 60_000) return "now";
+  if (elapsed < 3_600_000) return `${Math.floor(elapsed / 60_000)}m`;
+  if (elapsed < 86_400_000) return `${Math.floor(elapsed / 3_600_000)}h`;
+  return new Date(updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 export default function Home() {
-  const [activePrompt, setActivePrompt] = useState<PromptKey>("architecture");
-  const [question, setQuestion] = useState("");
-  const [submittedQuestion, setSubmittedQuestion] = useState("");
+  const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
+  const utils = trpc.useUtils();
+  const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [hasSelectedInitialConversation, setHasSelectedInitialConversation] = useState(false);
 
-  const active = useMemo(() => promptLibrary[activePrompt], [activePrompt]);
+  const conversations = trpc.conversations.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+    staleTime: 10_000,
+  });
+  const activeConversation = trpc.conversations.get.useQuery(
+    { conversationId: activeConversationId ?? 0 },
+    { enabled: isAuthenticated && activeConversationId !== null }
+  );
 
-  function scrollToChat() {
-    document.getElementById("try-it")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  useEffect(() => {
+    if (!hasSelectedInitialConversation && conversations.data) {
+      setActiveConversationId(conversations.data[0]?.id ?? null);
+      setHasSelectedInitialConversation(true);
+    }
+  }, [conversations.data, hasSelectedInitialConversation]);
+
+  const sendMessage = trpc.conversations.send.useMutation({
+    onSuccess: async (result) => {
+      setPendingMessage(null);
+      setActiveConversationId(result.conversationId);
+      await Promise.all([
+        utils.conversations.list.invalidate(),
+        utils.conversations.get.invalidate({ conversationId: result.conversationId }),
+      ]);
+    },
+    onError: (error) => {
+      setPendingMessage(null);
+      toast.error("The Companion could not answer that yet.", { description: error.message });
+    },
+  });
+
+  const renameConversation = trpc.conversations.rename.useMutation({
+    onSuccess: async () => {
+      await utils.conversations.list.invalidate();
+      toast.success("Conversation renamed");
+    },
+    onError: error => toast.error("Could not rename conversation", { description: error.message }),
+  });
+
+  const deleteConversation = trpc.conversations.delete.useMutation({
+    onSuccess: async (_, variables) => {
+      if (activeConversationId === variables.conversationId) setActiveConversationId(null);
+      await utils.conversations.list.invalidate();
+      toast.success("Conversation deleted");
+    },
+    onError: error => toast.error("Could not delete conversation", { description: error.message }),
+  });
+
+  const displayMessages = useMemo<DisplayMessage[]>(() => {
+    const stored = activeConversation.data?.messages.map(message => ({
+      role: message.role,
+      content: message.content,
+    })) ?? [];
+    return pendingMessage ? [...stored, { role: "user", content: pendingMessage }] : stored;
+  }, [activeConversation.data?.messages, pendingMessage]);
+
+  function handleSend(content: string) {
+    if (!isAuthenticated) {
+      startLogin();
+      return;
+    }
+    if (sendMessage.isPending) return;
+    setPendingMessage(content);
+    sendMessage.mutate({ conversationId: activeConversationId ?? undefined, content });
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!question.trim()) return;
-    setSubmittedQuestion(question.trim());
-    setQuestion("");
+  function startNewChat() {
+    setPendingMessage(null);
+    setActiveConversationId(null);
   }
 
-  const displayedPrompt = submittedQuestion || active.prompt;
-  const displayedResponse = submittedQuestion
-    ? "I’ve captured the decision behind your question. In a live workspace, I’d pull the relevant sources, expose the assumptions, and return an answer with a clear next action."
-    : active.response;
+  function handleRename(conversationId: number, currentTitle: string) {
+    const title = window.prompt("Rename conversation", currentTitle)?.trim();
+    if (title && title !== currentTitle) renameConversation.mutate({ conversationId, title });
+  }
+
+  async function handleLogout() {
+    await logout();
+    setActiveConversationId(null);
+  }
+
+  if (authLoading) {
+    return <div className="grid min-h-screen place-items-center bg-[#10120f] text-[#c7f36b]"><Loader2 className="size-6 animate-spin" /></div>;
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <main className="relative isolate grid min-h-screen overflow-hidden bg-[#10120f] px-6 py-8 text-[#f3f2eb] sm:px-10 lg:grid-cols-[1.1fr_.9fr] lg:px-[9vw]">
+        <div className="pointer-events-none absolute inset-0 -z-10 opacity-40 [background-image:linear-gradient(rgba(242,241,234,.045)_1px,transparent_1px),linear-gradient(90deg,rgba(242,241,234,.045)_1px,transparent_1px)] [background-size:72px_72px]" />
+        <section className="flex max-w-2xl flex-col justify-between py-4 lg:py-12">
+          <div className="flex items-center gap-3 font-mono text-[11px] tracking-[.16em] text-[#c7f36b]"><SignalMark className="size-8" /> MANUS / COMPANION</div>
+          <div className="my-16 lg:my-0">
+            <p className="mb-5 flex items-center gap-2 font-mono text-[10px] tracking-[.14em] text-[#c7f36b]"><span className="size-2 rounded-full bg-[#c7f36b]" /> PRIVATE WORKSPACE / READY</p>
+            <h1 className="max-w-xl font-['Space_Grotesk'] text-5xl font-semibold leading-[.92] tracking-[-.07em] sm:text-7xl">Bring the work.<br /><span className="text-[#c7f36b]">Keep</span> the context.</h1>
+            <p className="mt-7 max-w-lg text-base leading-7 text-[#b8bbb0]">Sign in to start a real conversation with Manus AI Companion. Your chat history is saved to your workspace, so you can return to decisions instead of starting over.</p>
+            <Button onClick={startLogin} className="mt-9 h-12 rounded-sm bg-[#c7f36b] px-5 font-semibold text-[#10120f] hover:bg-[#dafb94]">
+              Open your workspace <Sparkles className="ml-2 size-4" />
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-x-6 gap-y-3 font-mono text-[9px] tracking-[.08em] text-[#888e83]"><span className="flex items-center gap-2"><ShieldCheck className="size-3 text-[#c7f36b]" /> AUTHENTICATED ACCESS</span><span>CONVERSATIONS / PERSISTENT</span></div>
+        </section>
+        <aside className="my-auto max-w-xl border border-white/15 bg-[#181b16]/85 p-5 shadow-2xl backdrop-blur sm:p-7">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4 font-mono text-[9px] tracking-[.13em] text-[#a5aa9e]"><span>WHAT BECOMES AVAILABLE</span><span className="text-[#c7f36b]">01 / 01</span></div>
+          <div className="divide-y divide-white/10">
+            {[
+              ["Persistent conversations", "Keep an organized record of the questions, decisions, and follow-ups that matter."],
+              ["Real model responses", "Send a message to the Companion and receive a generated response rather than a prewritten demonstration."],
+              ["Workspace control", "Start, rename, and delete conversations whenever your work changes direction."],
+            ].map(([title, body], index) => <div key={title} className="py-6"><div className="mb-2 font-mono text-[9px] tracking-[.12em] text-[#c7f36b]">0{index + 1} / CAPABILITY</div><h2 className="font-['Space_Grotesk'] text-2xl font-medium tracking-[-.04em]">{title}</h2><p className="mt-2 text-sm leading-6 text-[#a5aa9e]">{body}</p></div>)}
+          </div>
+        </aside>
+      </main>
+    );
+  }
 
   return (
-    <div className="observatory-page overflow-hidden bg-[#10120f] text-[#f2f1ea]">
-      <header className="site-header">
-        <a className="brand-lockup" href="#top" aria-label="Manus AI Companion home">
-          <SignalMark className="brand-mark" />
-          <span>MANUS / COMPANION</span>
-        </a>
-        <nav className="hidden items-center gap-7 lg:flex" aria-label="Primary navigation">
-          <a href="#capabilities">Capabilities</a>
-          <a href="#operating-model">Operating model</a>
-          <a href="#roadmap">Roadmap</a>
-        </nav>
-        <Button className="nav-cta" onClick={scrollToChat}>
-          Open the workspace <ArrowUpRight size={15} />
-        </Button>
-        <button className="mobile-menu" aria-label="Open navigation"><Menu size={20} /></button>
-      </header>
-
-      <main id="top">
-        <section className="hero-section" aria-labelledby="hero-title">
-          <div className="measurement-rail hero-rail" aria-hidden="true">
-            <span>00</span><i /><span>01</span><i /><span>02</span><i /><span>03</span>
-          </div>
-          <div className="hero-copy">
-            <div className="eyebrow"><span className="live-pulse" /> GENAI / OPERATING SYSTEM</div>
-            <h1 id="hero-title">Bring context.<br /><em>Leave</em> with a decision.</h1>
-            <p className="hero-summary">
-              Manus AI Companion is the evidence-first AI workspace for teams that need answers they can act on—not just outputs they can skim.
-            </p>
-            <div className="hero-actions">
-              <Button className="primary-signal" onClick={scrollToChat}>
-                Try the answer loop <ArrowUpRight size={17} />
-              </Button>
-              <a className="text-link" href="#operating-model">Explore the operating model <ChevronRight size={16} /></a>
+    <main className="flex h-screen min-h-screen overflow-hidden bg-[#10120f] text-[#f3f2eb]">
+      <aside className="hidden w-[290px] shrink-0 flex-col border-r border-white/10 bg-[#141712] lg:flex">
+        <div className="flex h-[78px] items-center gap-3 border-b border-white/10 px-6"><SignalMark className="size-7" /><div><p className="font-['Space_Grotesk'] text-xs font-semibold tracking-[.14em]">MANUS / COMPANION</p><p className="mt-0.5 font-mono text-[8px] tracking-[.12em] text-[#8d9388]">WORKSPACE / ACTIVE</p></div></div>
+        <div className="p-4"><Button onClick={startNewChat} className="h-10 w-full justify-start rounded-sm bg-[#c7f36b] px-3 text-sm font-semibold text-[#10120f] hover:bg-[#dafb94]"><MessageSquarePlus className="mr-2 size-4" /> New chat</Button></div>
+        <div className="flex items-center gap-2 px-5 pb-3 font-mono text-[9px] tracking-[.12em] text-[#858b80]"><MessageCircle className="size-3 text-[#c7f36b]" /> CHAT HISTORY</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+          {conversations.isLoading ? <div className="grid place-items-center py-10"><Loader2 className="size-4 animate-spin text-[#c7f36b]" /></div> : conversations.data?.length ? conversations.data.map(conversation => (
+            <div key={conversation.id} className={`group mb-1 flex items-center gap-2 border px-3 py-2.5 transition-colors ${activeConversationId === conversation.id ? "border-[#c7f36b]/40 bg-[#c7f36b]/10" : "border-transparent hover:bg-white/5"}`}>
+              <button className="min-w-0 flex-1 text-left" onClick={() => setActiveConversationId(conversation.id)}><span className="block truncate text-sm text-[#e7e7df]">{conversation.title}</span><span className="mt-1 block font-mono text-[9px] text-[#868c80]">UPDATED {formatUpdatedAt(conversation.updatedAt).toUpperCase()}</span></button>
+              <div className="flex opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"><button aria-label={`Rename ${conversation.title}`} className="p-1.5 text-[#a6aba1] hover:text-[#c7f36b]" onClick={() => handleRename(conversation.id, conversation.title)}><Pencil className="size-3" /></button><button aria-label={`Delete ${conversation.title}`} className="p-1.5 text-[#a6aba1] hover:text-red-300" onClick={() => deleteConversation.mutate({ conversationId: conversation.id })}><Trash2 className="size-3" /></button></div>
             </div>
-            <div className="hero-proof">
-              <span><Check size={14} /> Persistent context</span>
-              <span><Check size={14} /> Live tools</span>
-              <span><Check size={14} /> Enterprise controls</span>
+          )) : <div className="px-3 py-8 text-center text-sm leading-6 text-[#838a7f]">No conversations yet. Start with a question worth keeping.</div>}
+        </div>
+        <div className="border-t border-white/10 p-4"><p className="mb-3 font-mono text-[8px] tracking-[.12em] text-[#7f867b]">YOUR PROFILE</p><div className="mb-3 flex items-center gap-3"><div className="grid size-8 place-items-center rounded-full bg-[#c7f36b] text-sm font-semibold text-[#10120f]">{user?.name?.slice(0, 1).toUpperCase() ?? "U"}</div><div className="min-w-0"><p className="truncate text-sm text-[#e8e8e0]">{user?.name ?? "Workspace user"}</p><p className="truncate font-mono text-[8px] tracking-[.08em] text-[#858b80]">SECURE SESSION</p></div></div><Button variant="ghost" onClick={handleLogout} className="h-9 w-full justify-start text-xs text-[#aab0a5] hover:bg-white/5 hover:text-white"><LogOut className="mr-2 size-3.5" /> Sign out</Button></div>
+      </aside>
+
+      <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
+        <SheetContent side="left" className="w-[86vw] border-white/10 bg-[#141712] p-0 text-[#f3f2eb] sm:max-w-sm">
+          <SheetTitle className="sr-only">Chat history and profile</SheetTitle>
+          <div className="flex h-full min-h-0 flex-col pt-5">
+            <div className="flex items-center gap-3 border-b border-white/10 px-6 pb-5"><SignalMark className="size-7" /><div><p className="font-['Space_Grotesk'] text-xs font-semibold tracking-[.14em]">MANUS / COMPANION</p><p className="mt-0.5 font-mono text-[8px] tracking-[.12em] text-[#8d9388]">WORKSPACE / ACTIVE</p></div></div>
+            <div className="p-4"><Button onClick={() => { startNewChat(); setIsMobileNavOpen(false); }} className="h-10 w-full justify-start rounded-sm bg-[#c7f36b] px-3 text-sm font-semibold text-[#10120f] hover:bg-[#dafb94]"><MessageSquarePlus className="mr-2 size-4" /> New chat</Button></div>
+            <div className="flex items-center gap-2 px-5 pb-3 font-mono text-[9px] tracking-[.12em] text-[#858b80]"><MessageCircle className="size-3 text-[#c7f36b]" /> CHAT HISTORY</div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+              {conversations.data?.length ? conversations.data.map(conversation => <div key={conversation.id} className={`group mb-1 flex items-center gap-2 border px-3 py-2.5 transition-colors ${activeConversationId === conversation.id ? "border-[#c7f36b]/40 bg-[#c7f36b]/10" : "border-transparent hover:bg-white/5"}`}><button className="min-w-0 flex-1 text-left" onClick={() => { setActiveConversationId(conversation.id); setIsMobileNavOpen(false); }}><span className="block truncate text-sm text-[#e7e7df]">{conversation.title}</span><span className="mt-1 block font-mono text-[9px] text-[#868c80]">UPDATED {formatUpdatedAt(conversation.updatedAt).toUpperCase()}</span></button><div className="flex"><button aria-label={`Rename ${conversation.title}`} className="p-1.5 text-[#a6aba1] hover:text-[#c7f36b]" onClick={() => handleRename(conversation.id, conversation.title)}><Pencil className="size-3" /></button><button aria-label={`Delete ${conversation.title}`} className="p-1.5 text-[#a6aba1] hover:text-red-300" onClick={() => deleteConversation.mutate({ conversationId: conversation.id })}><Trash2 className="size-3" /></button></div></div>) : <div className="px-3 py-8 text-center text-sm leading-6 text-[#838a7f]">No conversations yet. Start with a question worth keeping.</div>}
             </div>
+            <div className="border-t border-white/10 p-4"><p className="mb-3 font-mono text-[8px] tracking-[.12em] text-[#7f867b]">YOUR PROFILE</p><div className="mb-3 flex items-center gap-3"><div className="grid size-8 place-items-center rounded-full bg-[#c7f36b] text-sm font-semibold text-[#10120f]">{user?.name?.slice(0, 1).toUpperCase() ?? "U"}</div><div className="min-w-0"><p className="truncate text-sm text-[#e8e8e0]">{user?.name ?? "Workspace user"}</p><p className="truncate font-mono text-[8px] tracking-[.08em] text-[#858b80]">SECURE SESSION</p></div></div><Button variant="ghost" onClick={handleLogout} className="h-9 w-full justify-start text-xs text-[#aab0a5] hover:bg-white/5 hover:text-white"><LogOut className="mr-2 size-3.5" /> Sign out</Button></div>
           </div>
+        </SheetContent>
+      </Sheet>
 
-          <div className="hero-visual-wrap" aria-label="An abstract AI signal field and conversation interface">
-            <img className="hero-art" src="/manus-storage/manus-hero-observatory_25bca990.png" alt="Abstract Manus AI signal orb in an observatory setting" />
-            <div className="hero-visual-wash" />
-            <div className="hero-chat-card">
-              <div className="chat-card-topline">
-                <span>LIVE ANSWER LOOP</span>
-                <span className="chat-online"><i /> CONNECTED</span>
-              </div>
-              <div className="chat-question">How should we ship a secure agent to our support team?</div>
-              <div className="chat-response">
-                <SignalMark className="chat-signal" />
-                <p>Start with a scoped knowledge base, permission-aware retrieval, and one auditable tool at a time. Measure resolution quality before expanding autonomy.</p>
-              </div>
-              <div className="chat-card-footer"><span>GROUNDING: 6 SOURCES</span><span>↗ 0.8s</span></div>
-            </div>
-            <div className="orbit-label orbit-a">MEMORY / SELECTIVE</div>
-            <div className="orbit-label orbit-b">TOOLS / ON</div>
-          </div>
-        </section>
-
-        <section className="signal-strip" aria-label="Product highlights">
-          <p><CircleDotDashed size={16} /> A deliberate system for high-consequence work</p>
-          <div className="signal-strip-divider" />
-          <p><span className="signal-dot" /> Evidence-first by design</p>
-          <p><span className="signal-dot" /> Built to improve over time</p>
-        </section>
-
-        <section id="capabilities" className="section-shell capabilities-section">
-          <div className="section-kicker"><span>01 / CAPABILITY</span><span>WHAT MAKES AN ANSWER ACTIONABLE</span></div>
-          <div className="capability-intro">
-            <h2>More than a model.<br />A <em>working</em> system.</h2>
-            <p>Build the behavior around the language model: the context it sees, the sources it can trust, the tools it can call, and the standards it must meet.</p>
-          </div>
-          <div className="capability-list">
-            {capabilities.map((item) => {
-              const Icon = item.icon;
-              return (
-                <article className="capability-row" key={item.number}>
-                  <div className="row-index">{item.number}</div>
-                  <div className="row-icon"><Icon size={22} /></div>
-                  <div className="row-main"><h3>{item.title}</h3><p>{item.body}</p></div>
-                  <div className="evidence-chip">{item.note}</div>
-                  <ArrowUpRight className="row-arrow" size={21} />
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section id="operating-model" className="memory-section">
-          <div className="measurement-rail memory-rail" aria-hidden="true"><span>04</span><i /><span>05</span><i /><span>06</span></div>
-          <div className="memory-image-wrap">
-            <img src="/manus-storage/manus-memory-field_24d2dd85.png" alt="Abstract field representing connected knowledge and AI memory" />
-            <div className="image-coordinate">MEMORY FIELD / 001</div>
-          </div>
-          <div className="memory-content">
-            <div className="eyebrow dark-eyebrow"><Database size={14} /> LONG-TERM CONTEXT</div>
-            <h2>Answers with<br /><em>continuity.</em></h2>
-            <p>From a customer’s first question to an executive decision, the workspace retrieves the few pieces of context that matter and makes the source trail visible.</p>
-            <ul className="check-list">
-              <li><Check size={16} /><span>Vector search and curated knowledge, working together</span></li>
-              <li><Check size={16} /><span>Preferences that stay useful—not merely stored</span></li>
-              <li><Check size={16} /><span>Human-readable provenance for consequential responses</span></li>
-            </ul>
-            <a className="underlined-link" href="#try-it">See an answer in context <ArrowUpRight size={16} /></a>
-          </div>
-        </section>
-
-        <section id="try-it" className="section-shell workspace-section" aria-labelledby="workspace-title">
-          <div className="workspace-head">
-            <div><div className="section-kicker compact"><span>02 / INTERACTION</span></div><h2 id="workspace-title">The answer loop,<br /><em>made visible.</em></h2></div>
-            <p>Select a working mode or bring your own question. This interactive sample demonstrates how the Companion frames a useful response.</p>
-          </div>
-          <div className="workspace-grid">
-            <div className="prompt-control-panel">
-              <div className="control-eyebrow">CHOOSE A WORKING MODE</div>
-              {(Object.keys(promptLibrary) as PromptKey[]).map((key) => (
-                <button key={key} onClick={() => { setActivePrompt(key); setSubmittedQuestion(""); }} className={`mode-button ${activePrompt === key && !submittedQuestion ? "active" : ""}`}>
-                  <span className="mode-icon">{key === "architecture" ? <Network size={17} /> : key === "research" ? <Search size={17} /> : <Code2 size={17} />}</span>
-                  <span><strong>{promptLibrary[key].label}</strong><small>{key === "architecture" ? "Design a system" : key === "research" ? "Interrogate a choice" : "Pressure-test a release"}</small></span>
-                  <ChevronRight size={17} />
-                </button>
-              ))}
-              <div className="control-note"><LockKeyhole size={14} /> Context stays permission-aware.</div>
-            </div>
-            <div className="answer-terminal">
-              <div className="terminal-top"><span><Bot size={16} /> MANUS COMPANION</span><span className="terminal-status"><i /> READY</span></div>
-              <div className="terminal-thread">
-                <div className="thread-label">YOUR QUESTION</div>
-                <p className="thread-question">{displayedPrompt}</p>
-                <div className="thread-rule" />
-                <div className="thread-label response-label"><SignalMark className="tiny-signal" /> GROUNDED RESPONSE</div>
-                <p className="thread-response">{displayedResponse}</p>
-                <div className="source-row"><span><BookOpen size={14} /> Source context prepared</span><span><Gauge size={14} /> Confidence: high</span></div>
-              </div>
-              <form onSubmit={handleSubmit} className="terminal-input">
-                <input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ask a question worth tracing…" aria-label="Ask a sample question" />
-                <button type="submit" aria-label="Send sample question"><ArrowUpRight size={18} /></button>
-              </form>
-            </div>
-          </div>
-        </section>
-
-        <section className="metrics-section">
-          <div className="metrics-backdrop"><img src="/manus-storage/manus-trust-infrastructure_18d553b3.png" alt="Abstract secure AI infrastructure sculpture" /></div>
-          <div className="metrics-copy">
-            <div className="eyebrow"><ShieldCheck size={14} /> OPERATIONAL TRUST</div>
-            <h2>Useful is not<br />enough. It must<br /><em>hold up.</em></h2>
-            <p>Every capability needs an operating standard: latency budgets, safety evaluations, control boundaries, and an observable path through the system.</p>
-            <a className="text-link" href="#roadmap">Trace the implementation path <ChevronRight size={16} /></a>
-          </div>
-          <div className="metric-stack">
-            {metrics.map((metric) => <div className="metric" key={metric.label}><strong>{metric.value}</strong><div><span>{metric.label}</span><small>{metric.detail}</small></div></div>)}
-          </div>
-        </section>
-
-        <section className="section-shell system-prompt-section">
-          <div className="prompt-label-block"><span>03 / PERSONA SPEC</span><p>An effective assistant is designed not only for what it can do, but for how it decides.</p></div>
-          <div className="prompt-quote">
-            <Sparkles size={21} />
-            <blockquote>“Act like a senior AI architect with a pragmatic CEO’s eye. Use evidence when it matters. Keep going until the decision is clear.”</blockquote>
-            <div className="prompt-quote-footer"><span>MASTER PROMPT / V1.0</span><span><Braces size={15} /> INSPECTABLE BEHAVIOR</span></div>
-          </div>
-        </section>
-
-        <section id="roadmap" className="section-shell roadmap-section">
-          <div className="section-kicker"><span>04 / DELIVERY</span><span>FROM FIRST LOOP TO PRODUCT SYSTEM</span></div>
-          <div className="roadmap-head"><h2>Make the promise<br /><em>operational.</em></h2><p>Progress is planned in clear stages: build the answer loop, ground it, prove it under pressure, and expand only with evidence.</p></div>
-          <div className="roadmap-track">
-            {roadmap.map((item, index) => <article className="roadmap-card" key={item.phase}><div className="roadmap-line"><span>{item.phase}</span>{index < roadmap.length - 1 && <i />}</div><h3>{item.title}</h3><p>{item.copy}</p><small>{item.state}</small></article>)}
-          </div>
-        </section>
-
-        <section className="closing-section">
-          <div className="closing-orb"><SignalMark className="closing-mark" /></div>
-          <div className="closing-copy">
-            <div className="eyebrow"><span className="live-pulse" /> YOUR NEXT SYSTEM</div>
-            <h2>Build an assistant<br />your team can <em>use.</em></h2>
-            <p>Start with the workflow where answers need to become decisions—and make the evidence part of the experience.</p>
-            <Button className="primary-signal closing-button" onClick={scrollToChat}>Open the workspace <ArrowUpRight size={17} /></Button>
-          </div>
-          <div className="closing-grid" aria-hidden="true" />
-        </section>
-      </main>
-
-      <footer className="site-footer">
-        <a className="brand-lockup" href="#top"><SignalMark className="brand-mark" /><span>MANUS / COMPANION</span></a>
-        <p>Evidence-first intelligence for consequential work.</p>
-        <div><a href="#capabilities">Capabilities</a><a href="#roadmap">Roadmap</a><a href="mailto:hello@manuscompanion.ai">Contact <ArrowUpRight size={13} /></a></div>
-      </footer>
-    </div>
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-[radial-gradient(circle_at_78%_12%,rgba(199,243,107,.08),transparent_26%),#10120f]">
+        <header className="flex h-[78px] shrink-0 items-center justify-between border-b border-white/10 px-5 sm:px-8"><div className="flex items-center gap-3"><button type="button" aria-label="Open chat history" onClick={() => setIsMobileNavOpen(true)} className="grid size-8 place-items-center border border-[#c7f36b]/45 bg-[#c7f36b]/10 text-[#c7f36b] transition-colors hover:bg-[#c7f36b]/20 lg:hidden"><PanelLeftClose className="size-4" /></button><div><p className="font-mono text-[9px] tracking-[.13em] text-[#c7f36b]">LIVE ANSWER LOOP</p><h1 className="mt-0.5 font-['Space_Grotesk'] text-base font-medium tracking-[-.03em]">{activeConversation.data?.conversation.title ?? "New conversation"}</h1></div></div><div className="hidden items-center gap-2 font-mono text-[9px] tracking-[.1em] text-[#9fa59a] sm:flex"><span className="size-1.5 rounded-full bg-[#c7f36b]" /> MODEL / READY</div></header>
+        <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-6 lg:p-8">
+          {activeConversationId !== null && activeConversation.isLoading ? <div className="grid flex-1 place-items-center"><Loader2 className="size-6 animate-spin text-[#c7f36b]" /></div> : <AIChatBox messages={displayMessages} onSendMessage={handleSend} isLoading={sendMessage.isPending} height="auto" className="mx-auto min-h-0 w-full max-w-5xl flex-1 overflow-hidden rounded-sm border-white/12 bg-[#171a15]/90 shadow-[0_24px_80px_rgba(0,0,0,.22)]" emptyStateMessage="Ask the Companion to clarify a decision, draft a plan, or pressure-test an idea." suggestedPrompts={suggestedPrompts} />}
+          <p className="mx-auto mt-3 flex w-full max-w-5xl items-center gap-2 px-1 font-mono text-[9px] leading-4 tracking-[.06em] text-[#777e73]"><ShieldCheck className="size-3 text-[#c7f36b]" /> RESPONSES ARE GENERATED BY A LIVE MODEL. VERIFY IMPORTANT OUTPUTS BEFORE ACTING.</p>
+        </div>
+      </section>
+    </main>
   );
 }
