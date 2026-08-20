@@ -8,7 +8,7 @@
 - [x] Connect the chat composer to an AI model and stream or return usable responses.
 - [x] Persist conversation history and let users create, select, rename, and delete conversations.
 - [x] Test successful, empty, failed, and logged-out interaction paths.
-- [ ] Verify responsive behavior, save a checkpoint, and deliver the working update.
+- [x] Verify responsive behavior, save a checkpoint, and deliver the working update.
 - [x] Make the left sidebar visibly support chat history, selected-chat state, new-chat creation, and profile controls at the bottom.
 - [x] Add microphone dictation to the chat composer with unsupported-browser and permission-denied states.
 - [x] Add assistant voice playback with play, stop, and loading states for completed responses.
