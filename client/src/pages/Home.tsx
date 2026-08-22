@@ -1,5 +1,5 @@
 /**
- * Manus AI Companion workspace: a real, authenticated conversation interface with persistent history.
+ * BMR AI CHATBOART workspace: a real, authenticated conversation interface with persistent history.
  * The layout keeps the Cognitive Observatory visual language while delegating rendering and composer behavior to AIChatBox.
  */
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -130,11 +130,11 @@ export default function Home() {
       <main className="relative isolate grid min-h-screen overflow-hidden bg-[#10120f] px-6 py-8 text-[#f3f2eb] sm:px-10 lg:grid-cols-[1.1fr_.9fr] lg:px-[9vw]">
         <div className="pointer-events-none absolute inset-0 -z-10 opacity-40 [background-image:linear-gradient(rgba(242,241,234,.045)_1px,transparent_1px),linear-gradient(90deg,rgba(242,241,234,.045)_1px,transparent_1px)] [background-size:72px_72px]" />
         <section className="flex max-w-2xl flex-col justify-between py-4 lg:py-12">
-          <div className="flex items-center gap-3 font-mono text-[11px] tracking-[.16em] text-[#c7f36b]"><SignalMark className="size-8" /> MANUS / COMPANION</div>
+          <div className="flex items-center gap-3 font-mono text-[11px] tracking-[.16em] text-[#c7f36b]"><SignalMark className="size-8" /> BMR AI / CHATBOART</div>
           <div className="my-16 lg:my-0">
             <p className="mb-5 flex items-center gap-2 font-mono text-[10px] tracking-[.14em] text-[#c7f36b]"><span className="size-2 rounded-full bg-[#c7f36b]" /> PRIVATE WORKSPACE / READY</p>
             <h1 className="max-w-xl font-['Space_Grotesk'] text-5xl font-semibold leading-[.92] tracking-[-.07em] sm:text-7xl">Bring the work.<br /><span className="text-[#c7f36b]">Keep</span> the context.</h1>
-            <p className="mt-7 max-w-lg text-base leading-7 text-[#b8bbb0]">Sign in to start a real conversation with Manus AI Companion. Your chat history is saved to your workspace, so you can return to decisions instead of starting over.</p>
+            <p className="mt-7 max-w-lg text-base leading-7 text-[#b8bbb0]">Sign in to start a real conversation with BMR AI CHATBOART. Your chat history is saved to your workspace, so you can return to decisions instead of starting over.</p>
             <Button onClick={startLogin} className="mt-9 h-12 rounded-sm bg-[#c7f36b] px-5 font-semibold text-[#10120f] hover:bg-[#dafb94]">
               Open your workspace <Sparkles className="ml-2 size-4" />
             </Button>
@@ -158,7 +158,7 @@ export default function Home() {
   return (
     <main className="flex h-screen min-h-screen overflow-hidden bg-[#10120f] text-[#f3f2eb]">
       <aside className="hidden w-[290px] shrink-0 flex-col border-r border-white/10 bg-[#141712] lg:flex">
-        <div className="flex h-[78px] items-center gap-3 border-b border-white/10 px-6"><SignalMark className="size-7" /><div><p className="font-['Space_Grotesk'] text-xs font-semibold tracking-[.14em]">MANUS / COMPANION</p><p className="mt-0.5 font-mono text-[8px] tracking-[.12em] text-[#8d9388]">WORKSPACE / ACTIVE</p></div></div>
+        <div className="flex h-[78px] items-center gap-3 border-b border-white/10 px-6"><SignalMark className="size-7" /><div><p className="font-['Space_Grotesk'] text-xs font-semibold tracking-[.14em]">BMR AI / CHATBOART</p><p className="mt-0.5 font-mono text-[8px] tracking-[.12em] text-[#8d9388]">WORKSPACE / ACTIVE</p></div></div>
         <div className="p-4"><Button onClick={startNewChat} className="h-10 w-full justify-start rounded-sm bg-[#c7f36b] px-3 text-sm font-semibold text-[#10120f] hover:bg-[#dafb94]"><MessageSquarePlus className="mr-2 size-4" /> New chat</Button></div>
         <div className="flex items-center gap-2 px-5 pb-3 font-mono text-[9px] tracking-[.12em] text-[#858b80]"><MessageCircle className="size-3 text-[#c7f36b]" /> CHAT HISTORY</div>
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
@@ -176,7 +176,7 @@ export default function Home() {
         <SheetContent side="left" className="w-[86vw] border-white/10 bg-[#141712] p-0 text-[#f3f2eb] sm:max-w-sm">
           <SheetTitle className="sr-only">Chat history and profile</SheetTitle>
           <div className="flex h-full min-h-0 flex-col pt-5">
-            <div className="flex items-center gap-3 border-b border-white/10 px-6 pb-5"><SignalMark className="size-7" /><div><p className="font-['Space_Grotesk'] text-xs font-semibold tracking-[.14em]">MANUS / COMPANION</p><p className="mt-0.5 font-mono text-[8px] tracking-[.12em] text-[#8d9388]">WORKSPACE / ACTIVE</p></div></div>
+            <div className="flex items-center gap-3 border-b border-white/10 px-6 pb-5"><SignalMark className="size-7" /><div><p className="font-['Space_Grotesk'] text-xs font-semibold tracking-[.14em]">BMR AI / CHATBOART</p><p className="mt-0.5 font-mono text-[8px] tracking-[.12em] text-[#8d9388]">WORKSPACE / ACTIVE</p></div></div>
             <div className="p-4"><Button onClick={() => { startNewChat(); setIsMobileNavOpen(false); }} className="h-10 w-full justify-start rounded-sm bg-[#c7f36b] px-3 text-sm font-semibold text-[#10120f] hover:bg-[#dafb94]"><MessageSquarePlus className="mr-2 size-4" /> New chat</Button></div>
             <div className="flex items-center gap-2 px-5 pb-3 font-mono text-[9px] tracking-[.12em] text-[#858b80]"><MessageCircle className="size-3 text-[#c7f36b]" /> CHAT HISTORY</div>
             <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">

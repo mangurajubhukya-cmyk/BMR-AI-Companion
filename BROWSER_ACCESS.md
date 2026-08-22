@@ -1,6 +1,6 @@
-# Browser Access Guide
+# BMR AI CHATBOART Browser Access Guide
 
-Manus AI Companion is a **web application**. End users do not download or install a desktop app, browser extension, or mobile package. They open the published HTTPS address in a current desktop or mobile browser.
+BMR AI CHATBOART is a **web application**. End users do not download or install a desktop app, browser extension, or mobile package. They open the published HTTPS address in a current desktop or mobile browser.
 
 ## For users
 

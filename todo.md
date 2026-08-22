@@ -26,3 +26,5 @@
 - [x] Confirm the production build uses browser-native APIs only and requires no client installation.
 - [x] Provide clear web access and publishing steps for opening the application from any modern browser.
 - [x] Add a concise browser-access note explaining public URL access, optional sign-in, optional microphone permission, and production startup.
+- [x] Rename browser titles, app metadata, and visible workspace branding to BMR AI CHATBOART.
+- [ ] Verify the renamed web experience and save a delivery checkpoint.

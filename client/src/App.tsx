@@ -1,4 +1,4 @@
-/** Application shell for the authenticated Manus AI Companion workspace. */
+/** Application shell for the authenticated BMR AI CHATBOART workspace. */
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
