@@ -46,3 +46,12 @@
 - [x] Add secure Stripe customer-portal and subscription-status server procedures without persisting sensitive payment details.
 - [x] Test language, voice, subscription status, checkout, and portal entry flows across browser-ready states.
 - [x] Save and deliver the global-ready subscription and multilingual update with setup guidance.
+- [x] Define transparent Free Trial, BMR Credit ($5), and BMR Ultra ($18) plan limits and renewal behavior.
+- [x] Add tiered Stripe product definitions and a dedicated in-app plans route with no external-window checkout launch.
+- [x] Route authenticated users to in-app checkout confirmation before securely redirecting the current tab to Stripe Checkout.
+- [x] Fix the New chat action so it always opens a visible, usable empty chat board with the composer ready.
+- [x] Improve the new-chat board with real-world starter actions and clear model/plan context.
+- [x] Add automated coverage for plan navigation, selected-tier checkout, and the corrected new-chat interaction.
+- [x] Test responsive plans, checkout-return, and new-chat behavior, then save and deliver the upgrade.
+- [x] Show the active Free Trial, BMR Credit, or BMR Ultra context and allowance on the new-chat board.
+- [x] Re-run validation, save the plan/new-chat release checkpoint, and deliver the upgrade.

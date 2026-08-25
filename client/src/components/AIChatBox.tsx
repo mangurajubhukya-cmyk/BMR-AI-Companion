@@ -40,6 +40,8 @@ export type AIChatBoxProps = {
   emptyStateMessage?: string;
   suggestedPrompts?: string[];
   speechLocale?: string;
+  autoFocus?: boolean;
+  planContext?: { name: string; allowance: string; onViewPlans?: () => void };
 };
 
 export function AIChatBox({
@@ -52,6 +54,8 @@ export function AIChatBox({
   emptyStateMessage = "Start a conversation with AI",
   suggestedPrompts,
   speechLocale = "auto",
+  autoFocus = false,
+  planContext,
 }: AIChatBoxProps) {
   const [input, setInput] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -80,6 +84,12 @@ export function AIChatBox({
     recognitionRef.current?.stop();
     window.speechSynthesis?.cancel();
   }, []);
+
+  useEffect(() => {
+    if (!autoFocus || displayMessages.length > 0 || isLoading) return;
+    const timer = window.setTimeout(() => textareaRef.current?.focus(), 80);
+    return () => window.clearTimeout(timer);
+  }, [autoFocus, displayMessages.length, isLoading]);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -172,8 +182,10 @@ export function AIChatBox({
         {displayMessages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center p-6 text-center">
             <Sparkles className="size-12 text-primary/40" />
+            <p className="mt-5 font-mono text-[10px] tracking-[.14em] text-[#c7f36b]">NEW CHAT / READY</p>
             <p className="mt-4 max-w-md text-sm leading-6 text-muted-foreground">{emptyStateMessage}</p>
             {suggestedPrompts?.length ? <div className="mt-7 flex max-w-2xl flex-wrap justify-center gap-2">{suggestedPrompts.map(prompt => <button key={prompt} type="button" disabled={isLoading} onClick={() => onSendMessage(prompt)} className="rounded-sm border border-white/15 bg-white/[.02] px-4 py-2 text-left text-sm text-[#c6cac0] transition-colors hover:border-[#c7f36b]/45 hover:bg-[#c7f36b]/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50">{prompt}</button>)}</div> : null}
+            {planContext ? <div className="mt-7 flex items-center gap-3 border border-white/10 bg-black/10 px-4 py-3 text-left"><Sparkles className="size-4 shrink-0 text-[#c7f36b]" /><p className="min-w-0 flex-1 text-xs leading-5 text-[#b7bdb2]"><span className="font-medium text-[#eceee7]">{planContext.name}</span><span className="text-[#72796f]"> · </span>{planContext.allowance}</p>{planContext.onViewPlans ? <button type="button" onClick={planContext.onViewPlans} className="shrink-0 font-mono text-[9px] tracking-[.09em] text-[#c7f36b] hover:text-[#dafb94]">VIEW PLANS</button> : null}</div> : null}
           </div>
         ) : (
           <ScrollArea className="h-full"><div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-5 sm:p-8">{displayMessages.map((message, index) => <div key={`${message.role}-${index}`} className={cn("flex gap-3", message.role === "user" ? "justify-end" : "justify-start")}>

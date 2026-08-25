@@ -27,8 +27,8 @@ vi.mock("@/components/ui/sheet", () => ({
   SheetTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 vi.mock("@/components/AIChatBox", () => ({
-  AIChatBox: ({ messages, onSendMessage }: { messages: Array<{ content: string }>; onSendMessage: (message: string) => void }) => (
-    <div data-testid="chat-surface"><span data-testid="message-count">{messages.length}</span><button onClick={() => onSendMessage("Verify live response")}>Send test message</button></div>
+  AIChatBox: ({ messages, onSendMessage, autoFocus }: { messages: Array<{ content: string }>; onSendMessage: (message: string) => void; autoFocus?: boolean }) => (
+    <div data-testid="chat-surface" data-auto-focus={autoFocus ? "true" : "false"}><span data-testid="message-count">{messages.length}</span><button onClick={() => onSendMessage("Verify live response")}>Send test message</button></div>
   ),
 }));
 vi.mock("@/lib/trpc", () => ({
@@ -99,6 +99,7 @@ describe("Companion workspace browser-like controls", () => {
     await user.click(screen.getAllByRole("button", { name: "New chat" })[0]);
     expect(screen.getByRole("heading", { name: "New conversation" })).toBeTruthy();
     expect(screen.getByTestId("message-count").textContent).toBe("0");
+    expect(screen.getByTestId("chat-surface").dataset.autoFocus).toBe("true");
 
     await user.click(screen.getAllByLabelText("Rename First decision")[0]);
     expect(workspace.mutations.rename).toHaveBeenCalledWith({ conversationId: 1, title: "Renamed decision" });
@@ -125,12 +126,12 @@ describe("Companion workspace browser-like controls", () => {
     expect(workspace.startLogin).toHaveBeenCalledTimes(1);
   });
 
-  it("shows a clear BMR Pro return state after successful Stripe Checkout", async () => {
+  it("shows a clear BMR plan return state after successful Stripe Checkout", async () => {
     window.history.replaceState({}, "", "/?checkout=success");
     render(<Home />);
 
     await waitFor(() => expect(workspace.toast.success).toHaveBeenCalledWith(
-      "BMR Pro checkout complete",
+      "BMR plan checkout complete",
       expect.objectContaining({ description: expect.stringContaining("Stripe subscription") })
     ));
   });

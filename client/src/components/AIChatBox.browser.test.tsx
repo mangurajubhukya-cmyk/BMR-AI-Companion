@@ -56,6 +56,25 @@ describe("AIChatBox browser controls", () => {
     expect(onSendMessage).toHaveBeenCalledWith("Draft a release plan");
   });
 
+  it("makes a fresh New chat immediately ready for typed input", async () => {
+    render(<AIChatBox messages={[]} onSendMessage={vi.fn()} height="320px" autoFocus />);
+
+    const composer = screen.getByPlaceholderText("Type your message…");
+    await waitFor(() => expect(document.activeElement).toBe(composer));
+    expect(screen.getByText("NEW CHAT / READY")).toBeTruthy();
+  });
+
+  it("shows the current plan context alongside fresh-chat starter actions", async () => {
+    const user = userEvent.setup();
+    const onViewPlans = vi.fn();
+    render(<AIChatBox messages={[]} onSendMessage={vi.fn()} height="320px" planContext={{ name: "Free Trial", allowance: "10 standard chat replies each day", onViewPlans }} />);
+
+    expect(screen.getByText("Free Trial")).toBeTruthy();
+    expect(screen.getByText(/10 standard chat replies each day/i)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "VIEW PLANS" }));
+    expect(onViewPlans).toHaveBeenCalledTimes(1);
+  });
+
   it("explains when browser dictation is unavailable", async () => {
     const user = userEvent.setup();
     render(<AIChatBox messages={[]} onSendMessage={vi.fn()} height="320px" />);

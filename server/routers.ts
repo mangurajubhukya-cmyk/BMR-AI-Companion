@@ -49,7 +49,7 @@ export const appRouter = router({
     }),
   }),
   billing: router({
-    checkout: protectedProcedure.input(z.object({ productId: z.literal("bmr_pro_monthly") })).mutation(async ({ ctx, input }) => {
+    checkout: protectedProcedure.input(z.object({ productId: z.enum(["bmr_credit_monthly", "bmr_ultra_monthly"]) })).mutation(async ({ ctx, input }) => {
       const origin = getRequestOrigin(ctx.req);
       const url = await createBmrCheckoutSession(ctx.user, input.productId, origin);
       return { url };

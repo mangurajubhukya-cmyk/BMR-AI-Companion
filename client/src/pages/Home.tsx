@@ -4,7 +4,6 @@
  */
 import { useAuth } from "@/_core/hooks/useAuth";
 import { AIChatBox, type Message as DisplayMessage } from "@/components/AIChatBox";
-import { OutcomeBlueprint } from "@/components/OutcomeBlueprint";
 import { ProfileControls } from "@/components/ProfileControls";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -12,9 +11,11 @@ import { companionFailureFeedback } from "@/lib/chatFeedback";
 import { trpc } from "@/lib/trpc";
 import { startLogin } from "@/const";
 import { languageOptionFor, type LanguagePreference } from "@shared/languages";
+import { BMR_PLAN_CATALOG } from "@shared/plans";
 import { Loader2, MessageCircle, MessageSquarePlus, PanelLeftClose, Pencil, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 
 const suggestedPrompts = [
   "Help me turn a vague product idea into a focused one-page brief.",
@@ -36,6 +37,7 @@ function formatUpdatedAt(updatedAt: Date) {
 
 export default function Home() {
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
+  const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -52,6 +54,7 @@ export default function Home() {
   );
   const preferences = trpc.preferences.get.useQuery(undefined, { enabled: isAuthenticated });
   const billingStatus = trpc.billing.status.useQuery(undefined, { enabled: isAuthenticated, retry: false });
+  const activePlan = billingStatus.data?.plan === "bmr_credit_monthly" ? BMR_PLAN_CATALOG.bmr_credit_monthly : billingStatus.data?.plan === "bmr_ultra_monthly" ? BMR_PLAN_CATALOG.bmr_ultra_monthly : BMR_PLAN_CATALOG.free;
 
   useEffect(() => {
     if (!hasSelectedInitialConversation && conversations.data) {
@@ -63,10 +66,10 @@ export default function Home() {
   useEffect(() => {
     const checkoutState = new URLSearchParams(window.location.search).get("checkout");
     if (checkoutState === "success") {
-      toast.success("BMR Pro checkout complete", { description: "Your Stripe subscription is being confirmed. Return to your workboard when ready." });
+      toast.success("BMR plan checkout complete", { description: "Your Stripe subscription is being confirmed. Return to your workspace when ready." });
       void utils.billing.status.invalidate();
     } else if (checkoutState === "cancelled") {
-      toast.error("BMR Pro checkout cancelled", { description: "No payment was taken. You can continue using your current workspace." });
+      toast.error("BMR plan checkout cancelled", { description: "No payment was taken. You can continue using your current workspace." });
     }
     if (checkoutState) window.history.replaceState({}, "", window.location.pathname);
   }, []);
@@ -87,14 +90,6 @@ export default function Home() {
     },
   });
 
-  const checkout = trpc.billing.checkout.useMutation({
-    onSuccess: ({ url }) => {
-      toast.success("Opening secure BMR Pro checkout", { description: "Stripe Checkout opens in a new tab." });
-      window.open(url, "_blank", "noopener,noreferrer");
-    },
-    onError: error => toast.error("Could not open checkout", { description: error.message }),
-  });
-
   const languagePreference = trpc.preferences.setLanguage.useMutation({
     onSuccess: async () => {
       await utils.preferences.get.invalidate();
@@ -105,8 +100,8 @@ export default function Home() {
 
   const billingPortal = trpc.billing.portal.useMutation({
     onSuccess: ({ url }) => {
-      toast.success("Opening secure billing portal", { description: "Stripe opens in a new tab where you can update or cancel your plan." });
-      window.open(url, "_blank", "noopener,noreferrer");
+      toast.success("Opening secure billing portal", { description: "You can update or cancel your plan with Stripe." });
+      window.location.assign(url);
     },
     onError: error => toast.error("Could not open billing portal", { description: error.message }),
   });
@@ -129,6 +124,7 @@ export default function Home() {
   });
 
   const displayMessages = useMemo<DisplayMessage[]>(() => {
+    if (activeConversationId === null) return pendingMessage ? [{ role: "user", content: pendingMessage }] : [];
     const stored = activeConversation.data?.messages.map(message => ({
       role: message.role,
       content: message.content,
@@ -151,19 +147,8 @@ export default function Home() {
     setActiveConversationId(null);
   }
 
-  function startOutcomeBlueprint(prompt: string) {
-    if (sendMessage.isPending) return;
-    setActiveConversationId(null);
-    setPendingMessage(prompt);
-    sendMessage.mutate({ content: prompt });
-  }
-
   function startProCheckout() {
-    if (!isAuthenticated) {
-      startLogin();
-      return;
-    }
-    checkout.mutate({ productId: "bmr_pro_monthly" });
+    setLocation("/plans");
   }
 
   function updateLanguage(preferredLanguage: LanguagePreference) {
@@ -237,7 +222,7 @@ export default function Home() {
             </div>
           )) : <div className="px-3 py-8 text-center text-sm leading-6 text-[#838a7f]">No conversations yet. Start with a question worth keeping.</div>}
         </div>
-        <ProfileControls name={user?.name} language={preferences.data?.preferredLanguage} isSavingLanguage={languagePreference.isPending} onLanguageChange={updateLanguage} subscription={billingStatus.data} subscriptionLoading={billingStatus.isLoading} billingLoading={billingPortal.isPending || checkout.isPending} onUpgrade={startProCheckout} onManagePlan={manageSubscription} onLogout={handleLogout} />
+        <ProfileControls name={user?.name} language={preferences.data?.preferredLanguage} isSavingLanguage={languagePreference.isPending} onLanguageChange={updateLanguage} subscription={billingStatus.data} subscriptionLoading={billingStatus.isLoading} billingLoading={billingPortal.isPending} onUpgrade={startProCheckout} onManagePlan={manageSubscription} onLogout={handleLogout} />
       </aside>
 
       <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
@@ -250,7 +235,7 @@ export default function Home() {
             <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
               {conversations.data?.length ? conversations.data.map(conversation => <div key={conversation.id} className={`group mb-1 flex items-center gap-2 border px-3 py-2.5 transition-colors ${activeConversationId === conversation.id ? "border-[#c7f36b]/40 bg-[#c7f36b]/10" : "border-transparent hover:bg-white/5"}`}><button className="min-w-0 flex-1 text-left" onClick={() => { setActiveConversationId(conversation.id); setIsMobileNavOpen(false); }}><span className="block truncate text-sm text-[#e7e7df]">{conversation.title}</span><span className="mt-1 block font-mono text-[9px] text-[#868c80]">UPDATED {formatUpdatedAt(conversation.updatedAt).toUpperCase()}</span></button><div className="flex"><button aria-label={`Rename ${conversation.title}`} className="p-1.5 text-[#a6aba1] hover:text-[#c7f36b]" onClick={() => handleRename(conversation.id, conversation.title)}><Pencil className="size-3" /></button><button aria-label={`Delete ${conversation.title}`} className="p-1.5 text-[#a6aba1] hover:text-red-300" onClick={() => deleteConversation.mutate({ conversationId: conversation.id })}><Trash2 className="size-3" /></button></div></div>) : <div className="px-3 py-8 text-center text-sm leading-6 text-[#838a7f]">No conversations yet. Start with a question worth keeping.</div>}
             </div>
-            <ProfileControls name={user?.name} language={preferences.data?.preferredLanguage} isSavingLanguage={languagePreference.isPending} onLanguageChange={updateLanguage} subscription={billingStatus.data} subscriptionLoading={billingStatus.isLoading} billingLoading={billingPortal.isPending || checkout.isPending} onUpgrade={startProCheckout} onManagePlan={manageSubscription} onLogout={handleLogout} />
+            <ProfileControls name={user?.name} language={preferences.data?.preferredLanguage} isSavingLanguage={languagePreference.isPending} onLanguageChange={updateLanguage} subscription={billingStatus.data} subscriptionLoading={billingStatus.isLoading} billingLoading={billingPortal.isPending} onUpgrade={startProCheckout} onManagePlan={manageSubscription} onLogout={handleLogout} />
           </div>
         </SheetContent>
       </Sheet>
@@ -258,7 +243,7 @@ export default function Home() {
       <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-[radial-gradient(circle_at_78%_12%,rgba(199,243,107,.08),transparent_26%),#10120f]">
         <header className="flex h-[78px] shrink-0 items-center justify-between border-b border-white/10 px-5 sm:px-8"><div className="flex items-center gap-3"><button type="button" aria-label="Open chat history" onClick={() => setIsMobileNavOpen(true)} className="grid size-8 place-items-center border border-[#c7f36b]/45 bg-[#c7f36b]/10 text-[#c7f36b] transition-colors hover:bg-[#c7f36b]/20 lg:hidden"><PanelLeftClose className="size-4" /></button><div><p className="font-mono text-[9px] tracking-[.13em] text-[#c7f36b]">LIVE ANSWER LOOP</p><h1 className="mt-0.5 font-['Space_Grotesk'] text-base font-medium tracking-[-.03em]">{activeConversation.data?.conversation.title ?? "New conversation"}</h1></div></div><div className="hidden items-center gap-2 font-mono text-[9px] tracking-[.1em] text-[#9fa59a] sm:flex"><span className="size-1.5 rounded-full bg-[#c7f36b]" /> MODEL / READY</div></header>
         <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-6 lg:p-8">
-          {activeConversationId !== null && activeConversation.isLoading ? <div className="grid flex-1 place-items-center"><Loader2 className="size-6 animate-spin text-[#c7f36b]" /></div> : <><>{displayMessages.length === 0 && !sendMessage.isPending ? <OutcomeBlueprint onStart={startOutcomeBlueprint} onUpgrade={startProCheckout} disabled={checkout.isPending} /> : null}</><AIChatBox messages={displayMessages} onSendMessage={handleSend} isLoading={sendMessage.isPending} height="auto" className="mx-auto min-h-0 w-full max-w-5xl flex-1 overflow-hidden rounded-sm border-white/12 bg-[#171a15]/90 shadow-[0_24px_80px_rgba(0,0,0,.22)]" emptyStateMessage="Ask the Companion to clarify a decision, draft a plan, or pressure-test an idea." suggestedPrompts={suggestedPrompts} speechLocale={languageOptionFor(preferences.data?.preferredLanguage).locale} /></>}
+          {activeConversationId !== null && activeConversation.isLoading ? <div className="grid flex-1 place-items-center"><Loader2 className="size-6 animate-spin text-[#c7f36b]" /></div> : <AIChatBox messages={displayMessages} onSendMessage={handleSend} isLoading={sendMessage.isPending} height="auto" className="mx-auto min-h-0 w-full max-w-5xl flex-1 overflow-hidden rounded-sm border-white/12 bg-[#171a15]/90 shadow-[0_24px_80px_rgba(0,0,0,.22)]" emptyStateMessage="Start a new chat. Ask for a plan, a draft, a translation, a client reply, or a careful second opinion." suggestedPrompts={["Plan a Client Win Sprint for my service", "Turn this idea into a content brief", "Translate this reply into Telugu", "Help me respond to a customer clearly"]} speechLocale={languageOptionFor(preferences.data?.preferredLanguage).locale} autoFocus={activeConversationId === null} planContext={activeConversationId === null ? { name: activePlan.name, allowance: activePlan.allowance, onViewPlans: () => setLocation("/plans") } : undefined} />}
           <p className="mx-auto mt-3 flex w-full max-w-5xl items-center gap-2 px-1 font-mono text-[9px] leading-4 tracking-[.06em] text-[#777e73]"><ShieldCheck className="size-3 text-[#c7f36b]" /> RESPONSES ARE GENERATED BY A LIVE MODEL. VERIFY IMPORTANT OUTPUTS BEFORE ACTING.</p>
         </div>
       </section>

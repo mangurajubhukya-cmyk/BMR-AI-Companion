@@ -7,7 +7,7 @@ import { CreditCard, Globe2, Loader2, Sparkles } from "lucide-react";
 import React from "react";
 
 type SubscriptionStatus = {
-  plan: "free" | "pro";
+  plan: "free" | "pro" | "bmr_credit_monthly" | "bmr_ultra_monthly";
   status: string;
   cancelAtPeriodEnd: boolean;
   hasBillingPortal: boolean;
@@ -28,7 +28,8 @@ type ProfileControlsProps = {
 
 export function ProfileControls({ name, language, isSavingLanguage = false, onLanguageChange, subscription, subscriptionLoading = false, billingLoading = false, onUpgrade, onManagePlan, onLogout }: ProfileControlsProps) {
   const selectedLanguage = languageOptionFor(language);
-  const isPro = subscription?.plan === "pro";
+  const isPaid = subscription?.plan !== undefined && subscription.plan !== "free";
+  const planName = subscription?.plan === "bmr_credit_monthly" ? "BMR Credit" : subscription?.plan === "bmr_ultra_monthly" ? "BMR Ultra" : isPaid ? "BMR paid plan" : "Free Trial";
 
   return (
     <div className="border-t border-white/10 p-4">
@@ -44,8 +45,8 @@ export function ProfileControls({ name, language, isSavingLanguage = false, onLa
       </label>
 
       <div className="mb-3 border border-white/10 bg-black/10 p-3">
-        <div className="flex items-start justify-between gap-3"><div><p className="font-mono text-[8px] tracking-[.1em] text-[#8d9588]">SUBSCRIPTION</p><p className="mt-1 text-sm font-medium text-[#eef0e8]">{subscriptionLoading ? "Checking plan…" : isPro ? "BMR Pro" : "Free workspace"}</p><p className="mt-1 text-[10px] leading-4 text-[#92988d]">{subscriptionLoading ? "Retrieving current billing status." : subscription?.cancelAtPeriodEnd ? "Cancels at the end of the current billing period." : subscription?.status ?? "Upgrade when you need reusable workboards and more capacity."}</p></div>{subscriptionLoading ? <Loader2 className="mt-1 size-4 animate-spin text-[#c7f36b]" /> : <CreditCard className="mt-1 size-4 text-[#c7f36b]" />}</div>
-        {isPro && subscription?.hasBillingPortal ? <Button type="button" variant="outline" disabled={billingLoading} onClick={onManagePlan} className="mt-3 h-8 w-full rounded-none border-white/15 bg-transparent text-xs text-[#d7dcd2] hover:border-[#c7f36b]/50 hover:bg-[#c7f36b]/10 hover:text-[#c7f36b]">{billingLoading ? <Loader2 className="mr-1.5 size-3 animate-spin" /> : <CreditCard className="mr-1.5 size-3" />}Manage or cancel plan</Button> : <Button type="button" disabled={billingLoading} onClick={onUpgrade} className="mt-3 h-8 w-full rounded-none bg-[#c7f36b] text-xs font-semibold text-[#10120f] hover:bg-[#dafb94]"><Sparkles className="mr-1.5 size-3" />Upgrade to BMR Pro</Button>}
+        <div className="flex items-start justify-between gap-3"><div><p className="font-mono text-[8px] tracking-[.1em] text-[#8d9588]">SUBSCRIPTION</p><p className="mt-1 text-sm font-medium text-[#eef0e8]">{subscriptionLoading ? "Checking plan…" : planName}</p><p className="mt-1 text-[10px] leading-4 text-[#92988d]">{subscriptionLoading ? "Retrieving current billing status." : subscription?.cancelAtPeriodEnd ? "Cancels at the end of the current billing period." : subscription?.status ?? "Use Free Trial daily, or choose a plan for more capacity."}</p></div>{subscriptionLoading ? <Loader2 className="mt-1 size-4 animate-spin text-[#c7f36b]" /> : <CreditCard className="mt-1 size-4 text-[#c7f36b]" />}</div>
+        {isPaid && subscription?.hasBillingPortal ? <Button type="button" variant="outline" disabled={billingLoading} onClick={onManagePlan} className="mt-3 h-8 w-full rounded-none border-white/15 bg-transparent text-xs text-[#d7dcd2] hover:border-[#c7f36b]/50 hover:bg-[#c7f36b]/10 hover:text-[#c7f36b]">{billingLoading ? <Loader2 className="mr-1.5 size-3 animate-spin" /> : <CreditCard className="mr-1.5 size-3" />}Manage or cancel plan</Button> : <Button type="button" disabled={billingLoading} onClick={onUpgrade} className="mt-3 h-8 w-full rounded-none bg-[#c7f36b] text-xs font-semibold text-[#10120f] hover:bg-[#dafb94]"><Sparkles className="mr-1.5 size-3" />Compare BMR plans</Button>}
       </div>
 
       <Button variant="ghost" onClick={onLogout} className="h-9 w-full justify-start text-xs text-[#aab0a5] hover:bg-white/5 hover:text-white">Sign out</Button>
