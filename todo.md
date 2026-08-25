@@ -32,7 +32,7 @@
 - [x] Define a clear paid offering and show a browser-ready pricing or subscription entry point.
 - [x] Implement secure checkout initiation and clear success, cancellation, and sign-in states.
 - [x] Add automated coverage for the payment entry flow and verify the Stripe-enabled interface.
-- [ ] Save and deliver the Stripe integration update with the required configuration steps documented.
+- [x] Save and deliver the Stripe integration update with the required configuration steps documented.
 - [x] Research real user earning workflows, unmet needs, and current AI capabilities relevant to BMR AI CHATBOART.
 - [x] Define three focused, ethical value-creation workflows with clear user outcomes and safe boundaries.
 - [x] Reframe the product experience around differentiated action plans rather than generic chat.
