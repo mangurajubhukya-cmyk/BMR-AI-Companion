@@ -1,6 +1,7 @@
 import { and, asc, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { ChatMessage, conversations, InsertUser, messages, users } from "../drizzle/schema";
+import type { LanguagePreference } from "../shared/languages";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -44,6 +45,18 @@ export async function getUserByOpenId(openId: string) {
   if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
   return result[0];
+}
+
+export async function updateUserLanguage(userId: number, preferredLanguage: LanguagePreference) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  await db.update(users).set({ preferredLanguage }).where(eq(users.id, userId));
+}
+
+export async function saveStripeCustomerId(userId: number, stripeCustomerId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  await db.update(users).set({ stripeCustomerId }).where(eq(users.id, userId));
 }
 
 export async function listConversationSummaries(userId: number) {

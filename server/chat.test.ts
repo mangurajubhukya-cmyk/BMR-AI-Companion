@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractReplyText, makeConversationTitle } from "./chat";
+import { extractReplyText, makeBmrSystemPrompt, makeConversationTitle } from "./chat";
 
 describe("chat response helpers", () => {
   it("creates a compact conversation title", () => {
@@ -22,5 +22,10 @@ describe("chat response helpers", () => {
       model: "test-model",
       choices: [],
     })).toBe("I could not generate a response. Please try again.");
+  });
+
+  it("includes the chosen Telugu response instruction in the model prompt", () => {
+    expect(makeBmrSystemPrompt("te")).toContain("Reply in Telugu");
+    expect(makeBmrSystemPrompt("auto")).toContain("Automatically detect the language");
   });
 });

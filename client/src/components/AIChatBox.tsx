@@ -39,6 +39,7 @@ export type AIChatBoxProps = {
   height?: string | number;
   emptyStateMessage?: string;
   suggestedPrompts?: string[];
+  speechLocale?: string;
 };
 
 export function AIChatBox({
@@ -50,6 +51,7 @@ export function AIChatBox({
   height = "600px",
   emptyStateMessage = "Start a conversation with AI",
   suggestedPrompts,
+  speechLocale = "auto",
 }: AIChatBoxProps) {
   const [input, setInput] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -108,7 +110,7 @@ export function AIChatBox({
     const recognition = new recognizer();
     recognition.continuous = false;
     recognition.interimResults = true;
-    recognition.lang = navigator.language || "en-US";
+    recognition.lang = speechLocale === "auto" ? navigator.language || "en-US" : speechLocale;
     recognition.onresult = event => {
       let transcript = "";
       for (let index = 0; index < event.results.length; index += 1) transcript += event.results[index][0]?.transcript ?? "";
@@ -138,6 +140,13 @@ export function AIChatBox({
     }
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(textForSpeech(content));
+    const preferredLocale = speechLocale === "auto" ? navigator.language || "en-US" : speechLocale;
+    utterance.lang = preferredLocale;
+    const voices = typeof window.speechSynthesis.getVoices === "function" ? window.speechSynthesis.getVoices() : [];
+    const matchingVoice = voices.find(voice => voice.lang.toLowerCase() === preferredLocale.toLowerCase())
+      ?? voices.find(voice => voice.lang.split("-")[0]?.toLowerCase() === preferredLocale.split("-")[0]?.toLowerCase());
+    if (matchingVoice) utterance.voice = matchingVoice;
+    else if (speechLocale !== "auto") setVoiceError(`A ${preferredLocale} voice is not installed in this browser. Playback may use the device default voice.`);
     utterance.rate = 1;
     utterance.onstart = () => {
       setStartingSpeechIndex(current => current === index ? null : current);

@@ -11,6 +11,11 @@ const mocks = vi.hoisted(() => ({
   listConversationSummaries: vi.fn(),
   listLLMModels: vi.fn(),
   renameConversation: vi.fn(),
+  updateUserLanguage: vi.fn(),
+  createBmrBillingPortalSession: vi.fn(),
+  createBmrCheckoutSession: vi.fn(),
+  getBmrSubscriptionSummary: vi.fn(),
+  getRequestOrigin: vi.fn(),
 }));
 
 vi.mock("./_core/llm", () => ({
@@ -26,6 +31,14 @@ vi.mock("./db", () => ({
   listConversationMessages: mocks.listConversationMessages,
   listConversationSummaries: mocks.listConversationSummaries,
   renameConversation: mocks.renameConversation,
+  updateUserLanguage: mocks.updateUserLanguage,
+}));
+
+vi.mock("./stripe", () => ({
+  createBmrBillingPortalSession: mocks.createBmrBillingPortalSession,
+  createBmrCheckoutSession: mocks.createBmrCheckoutSession,
+  getBmrSubscriptionSummary: mocks.getBmrSubscriptionSummary,
+  getRequestOrigin: mocks.getRequestOrigin,
 }));
 
 import { appRouter } from "./routers";
@@ -36,6 +49,8 @@ const user = {
   email: "test@example.com",
   name: "Test User",
   loginMethod: "manus",
+  preferredLanguage: "auto",
+  stripeCustomerId: null,
   role: "user" as const,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -66,5 +81,30 @@ describe("conversations.send model failure", () => {
 
     await expect(caller.conversations.send({ content: "Hello" })).rejects.toThrow("Model temporarily unavailable");
     expect(mocks.createMessage).toHaveBeenCalledWith({ conversationId: 42, role: "user", content: "Hello" });
+  });
+});
+
+describe("preferences and billing access", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.getRequestOrigin.mockReturnValue("https://bmr.example");
+    mocks.getBmrSubscriptionSummary.mockResolvedValue({ plan: "pro", status: "active", cancelAtPeriodEnd: false, hasBillingPortal: true });
+    mocks.createBmrBillingPortalSession.mockResolvedValue("https://billing.example/portal");
+  });
+
+  it("persists a supported Telugu language preference for future live model replies", async () => {
+    const caller = appRouter.createCaller(createAuthContext());
+
+    await expect(caller.preferences.setLanguage({ preferredLanguage: "te" })).resolves.toEqual({ preferredLanguage: "te" });
+    expect(mocks.updateUserLanguage).toHaveBeenCalledWith(1, "te");
+    await expect(caller.preferences.setLanguage({ preferredLanguage: "not-a-language" })).rejects.toThrow("Unsupported language preference");
+  });
+
+  it("returns a subscription summary and a short-lived billing portal URL only for an authenticated user", async () => {
+    const caller = appRouter.createCaller(createAuthContext());
+
+    await expect(caller.billing.status()).resolves.toMatchObject({ plan: "pro", status: "active" });
+    await expect(caller.billing.portal()).resolves.toEqual({ url: "https://billing.example/portal" });
+    expect(mocks.createBmrBillingPortalSession).toHaveBeenCalledWith(user, "https://bmr.example");
   });
 });

@@ -10,7 +10,7 @@ const workspace = vi.hoisted(() => {
     auth: { user: { name: "Mira" }, loading: false, isAuthenticated: true, logout: vi.fn().mockResolvedValue(undefined) },
     conversations: [] as Array<{ id: number; title: string; updatedAt: Date }>,
     details: new Map<number, { conversation: { id: number; title: string }; messages: Array<{ role: "user" | "assistant"; content: string }> }>(),
-    mutations: { sendOptions: undefined as any, rename: vi.fn(), delete: vi.fn() },
+    mutations: { sendOptions: undefined as any, rename: vi.fn(), delete: vi.fn(), setLanguage: vi.fn(), checkout: vi.fn(), portal: vi.fn() },
     toast: { error: vi.fn(), success: vi.fn() },
     startLogin: vi.fn(),
     invalidate,
@@ -33,7 +33,7 @@ vi.mock("@/components/AIChatBox", () => ({
 }));
 vi.mock("@/lib/trpc", () => ({
   trpc: {
-    useUtils: () => ({ conversations: { list: { invalidate: workspace.invalidate }, get: { invalidate: workspace.invalidate } } }),
+    useUtils: () => ({ conversations: { list: { invalidate: workspace.invalidate }, get: { invalidate: workspace.invalidate } }, preferences: { get: { invalidate: workspace.invalidate } }, billing: { status: { invalidate: workspace.invalidate } } }),
     conversations: {
       list: { useQuery: () => ({ data: workspace.conversations, isLoading: false }) },
       get: { useQuery: (input: { conversationId: number }) => ({ data: workspace.details.get(input.conversationId), isLoading: false }) },
@@ -42,7 +42,15 @@ vi.mock("@/lib/trpc", () => ({
       rename: { useMutation: () => ({ mutate: workspace.mutations.rename }) },
       delete: { useMutation: () => ({ mutate: workspace.mutations.delete }) },
     },
-    billing: { checkout: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) } },
+    preferences: {
+      get: { useQuery: () => ({ data: { preferredLanguage: "auto" }, isLoading: false }) },
+      setLanguage: { useMutation: () => ({ mutate: workspace.mutations.setLanguage, isPending: false }) },
+    },
+    billing: {
+      checkout: { useMutation: () => ({ mutate: workspace.mutations.checkout, isPending: false }) },
+      status: { useQuery: () => ({ data: { plan: "free", status: "No active subscription", cancelAtPeriodEnd: false, hasBillingPortal: false }, isLoading: false }) },
+      portal: { useMutation: () => ({ mutate: workspace.mutations.portal, isPending: false }) },
+    },
   },
 }));
 
@@ -65,6 +73,9 @@ describe("Companion workspace browser-like controls", () => {
     workspace.mutations.sendOptions = undefined;
     workspace.mutations.rename.mockReset();
     workspace.mutations.delete.mockReset();
+    workspace.mutations.setLanguage.mockReset();
+    workspace.mutations.checkout.mockReset();
+    workspace.mutations.portal.mockReset();
     workspace.toast.error.mockReset();
     workspace.toast.success.mockReset();
     workspace.startLogin.mockReset();

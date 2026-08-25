@@ -12,6 +12,8 @@ import { AIChatBox } from "./AIChatBox";
 
 class FakeUtterance {
   rate = 1;
+  lang = "";
+  voice: unknown;
   onstart: (() => void) | null = null;
   onend: (() => void) | null = null;
   onerror: (() => void) | null = null;
@@ -31,7 +33,7 @@ describe("AIChatBox browser controls", () => {
       disconnect() {}
     }
     Object.defineProperty(globalThis, "ResizeObserver", { configurable: true, value: TestResizeObserver });
-    Object.defineProperty(window, "speechSynthesis", { configurable: true, value: { speak, cancel } });
+    Object.defineProperty(window, "speechSynthesis", { configurable: true, value: { speak, cancel, getVoices: vi.fn(() => [{ lang: "te-IN", name: "Telugu device voice" }]) } });
     Object.defineProperty(window, "SpeechSynthesisUtterance", { configurable: true, value: FakeUtterance });
     Object.defineProperty(globalThis, "SpeechSynthesisUtterance", { configurable: true, value: FakeUtterance });
     Element.prototype.scrollTo = vi.fn();
@@ -90,5 +92,15 @@ describe("AIChatBox browser controls", () => {
     const utterance = speak.mock.calls[0]?.[0] as FakeUtterance;
     utterance.onstart?.();
     await waitFor(() => expect(screen.getByText("STOP VOICE")).toBeTruthy());
+  });
+
+  it("assigns the selected Telugu locale to browser speech playback", async () => {
+    const user = userEvent.setup();
+    render(<AIChatBox messages={[{ role: "assistant", content: "తెలుగులో సమాధానం" }]} onSendMessage={vi.fn()} height="320px" speechLocale="te-IN" />);
+
+    await user.click(screen.getByRole("button", { name: /play voice/i }));
+
+    const utterance = speak.mock.calls[0]?.[0] as FakeUtterance;
+    expect(utterance.lang).toBe("te-IN");
   });
 });

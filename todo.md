@@ -38,3 +38,11 @@
 - [x] Reframe the product experience around differentiated action plans rather than generic chat.
 - [x] Build an actionable paid offering and checkout entry point only after the value proposition is defined.
 - [x] Test the revised outcome-focused product experience and document pricing assumptions for review.
+- [x] Research browser language and speech capabilities for Indian and international users, including Telugu, Hindi, and Marathi.
+- [x] Add a persisted user language preference with English, Telugu, Hindi, Marathi, and an automatic language option.
+- [x] Instruct the live AI workflow to reply in the selected language and retain the selected language in conversation behavior.
+- [x] Upgrade voice input and speech playback to use the selected language with browser support and graceful fallbacks.
+- [x] Add a profile subscription section showing current BMR Pro status, upgrade, and secure Stripe billing-management controls.
+- [x] Add secure Stripe customer-portal and subscription-status server procedures without persisting sensitive payment details.
+- [x] Test language, voice, subscription status, checkout, and portal entry flows across browser-ready states.
+- [ ] Save and deliver the global-ready subscription and multilingual update with setup guidance.

@@ -18,6 +18,10 @@ The checkout request carries the authenticated user’s ID and basic account met
 4. Complete the test checkout. Stripe redirects back to BMR with `?checkout=success`.
 5. In the Stripe Dashboard, confirm the Checkout Session and subscription. The webhook endpoint is `/api/stripe/webhook`.
 
+## Enable subscription management
+
+In **Stripe Dashboard → Settings → Billing → Customer portal**, configure the sandbox portal before testing BMR Pro management. Enable cancellation, billing history, payment method updates, and—if you introduce more than one plan—the product catalog users may switch between. After Stripe sends a real `checkout.session.completed` webhook, BMR stores only the Stripe customer ID. The profile’s **Manage or cancel plan** button then creates a short-lived, authenticated portal session for that customer.
+
 ## Before accepting real payments
 
 Confirm the final price, currency, tax treatment, refund terms, cancellation terms, and which Pro features are actually available. Then replace the test product configuration in `server/products.ts` with a live Stripe Price ID or confirmed live pricing, complete Stripe verification, and enter live keys through **Settings → Payment**. Test first in sandbox; do not treat the $19 test configuration as a final commercial decision.

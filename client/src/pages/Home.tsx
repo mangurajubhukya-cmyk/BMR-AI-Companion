@@ -5,12 +5,14 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { AIChatBox, type Message as DisplayMessage } from "@/components/AIChatBox";
 import { OutcomeBlueprint } from "@/components/OutcomeBlueprint";
+import { ProfileControls } from "@/components/ProfileControls";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { companionFailureFeedback } from "@/lib/chatFeedback";
 import { trpc } from "@/lib/trpc";
 import { startLogin } from "@/const";
-import { Loader2, LogOut, MessageCircle, MessageSquarePlus, PanelLeftClose, Pencil, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
+import { languageOptionFor, type LanguagePreference } from "@shared/languages";
+import { Loader2, MessageCircle, MessageSquarePlus, PanelLeftClose, Pencil, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -48,6 +50,8 @@ export default function Home() {
     { conversationId: activeConversationId ?? 0 },
     { enabled: isAuthenticated && activeConversationId !== null }
   );
+  const preferences = trpc.preferences.get.useQuery(undefined, { enabled: isAuthenticated });
+  const billingStatus = trpc.billing.status.useQuery(undefined, { enabled: isAuthenticated, retry: false });
 
   useEffect(() => {
     if (!hasSelectedInitialConversation && conversations.data) {
@@ -60,6 +64,7 @@ export default function Home() {
     const checkoutState = new URLSearchParams(window.location.search).get("checkout");
     if (checkoutState === "success") {
       toast.success("BMR Pro checkout complete", { description: "Your Stripe subscription is being confirmed. Return to your workboard when ready." });
+      void utils.billing.status.invalidate();
     } else if (checkoutState === "cancelled") {
       toast.error("BMR Pro checkout cancelled", { description: "No payment was taken. You can continue using your current workspace." });
     }
@@ -88,6 +93,22 @@ export default function Home() {
       window.open(url, "_blank", "noopener,noreferrer");
     },
     onError: error => toast.error("Could not open checkout", { description: error.message }),
+  });
+
+  const languagePreference = trpc.preferences.setLanguage.useMutation({
+    onSuccess: async () => {
+      await utils.preferences.get.invalidate();
+      toast.success("Language updated", { description: "New responses and voice controls will use your selected language." });
+    },
+    onError: error => toast.error("Could not update language", { description: error.message }),
+  });
+
+  const billingPortal = trpc.billing.portal.useMutation({
+    onSuccess: ({ url }) => {
+      toast.success("Opening secure billing portal", { description: "Stripe opens in a new tab where you can update or cancel your plan." });
+      window.open(url, "_blank", "noopener,noreferrer");
+    },
+    onError: error => toast.error("Could not open billing portal", { description: error.message }),
   });
 
   const renameConversation = trpc.conversations.rename.useMutation({
@@ -143,6 +164,19 @@ export default function Home() {
       return;
     }
     checkout.mutate({ productId: "bmr_pro_monthly" });
+  }
+
+  function updateLanguage(preferredLanguage: LanguagePreference) {
+    if (!isAuthenticated || languagePreference.isPending) return;
+    languagePreference.mutate({ preferredLanguage });
+  }
+
+  function manageSubscription() {
+    if (!isAuthenticated) {
+      startLogin();
+      return;
+    }
+    billingPortal.mutate();
   }
 
   function handleRename(conversationId: number, currentTitle: string) {
@@ -203,7 +237,7 @@ export default function Home() {
             </div>
           )) : <div className="px-3 py-8 text-center text-sm leading-6 text-[#838a7f]">No conversations yet. Start with a question worth keeping.</div>}
         </div>
-        <div className="border-t border-white/10 p-4"><p className="mb-3 font-mono text-[8px] tracking-[.12em] text-[#7f867b]">YOUR PROFILE</p><div className="mb-3 flex items-center gap-3"><div className="grid size-8 place-items-center rounded-full bg-[#c7f36b] text-sm font-semibold text-[#10120f]">{user?.name?.slice(0, 1).toUpperCase() ?? "U"}</div><div className="min-w-0"><p className="truncate text-sm text-[#e8e8e0]">{user?.name ?? "Workspace user"}</p><p className="truncate font-mono text-[8px] tracking-[.08em] text-[#858b80]">SECURE SESSION</p></div></div><Button variant="ghost" onClick={handleLogout} className="h-9 w-full justify-start text-xs text-[#aab0a5] hover:bg-white/5 hover:text-white"><LogOut className="mr-2 size-3.5" /> Sign out</Button></div>
+        <ProfileControls name={user?.name} language={preferences.data?.preferredLanguage} isSavingLanguage={languagePreference.isPending} onLanguageChange={updateLanguage} subscription={billingStatus.data} subscriptionLoading={billingStatus.isLoading} billingLoading={billingPortal.isPending || checkout.isPending} onUpgrade={startProCheckout} onManagePlan={manageSubscription} onLogout={handleLogout} />
       </aside>
 
       <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
@@ -216,7 +250,7 @@ export default function Home() {
             <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
               {conversations.data?.length ? conversations.data.map(conversation => <div key={conversation.id} className={`group mb-1 flex items-center gap-2 border px-3 py-2.5 transition-colors ${activeConversationId === conversation.id ? "border-[#c7f36b]/40 bg-[#c7f36b]/10" : "border-transparent hover:bg-white/5"}`}><button className="min-w-0 flex-1 text-left" onClick={() => { setActiveConversationId(conversation.id); setIsMobileNavOpen(false); }}><span className="block truncate text-sm text-[#e7e7df]">{conversation.title}</span><span className="mt-1 block font-mono text-[9px] text-[#868c80]">UPDATED {formatUpdatedAt(conversation.updatedAt).toUpperCase()}</span></button><div className="flex"><button aria-label={`Rename ${conversation.title}`} className="p-1.5 text-[#a6aba1] hover:text-[#c7f36b]" onClick={() => handleRename(conversation.id, conversation.title)}><Pencil className="size-3" /></button><button aria-label={`Delete ${conversation.title}`} className="p-1.5 text-[#a6aba1] hover:text-red-300" onClick={() => deleteConversation.mutate({ conversationId: conversation.id })}><Trash2 className="size-3" /></button></div></div>) : <div className="px-3 py-8 text-center text-sm leading-6 text-[#838a7f]">No conversations yet. Start with a question worth keeping.</div>}
             </div>
-            <div className="border-t border-white/10 p-4"><p className="mb-3 font-mono text-[8px] tracking-[.12em] text-[#7f867b]">YOUR PROFILE</p><div className="mb-3 flex items-center gap-3"><div className="grid size-8 place-items-center rounded-full bg-[#c7f36b] text-sm font-semibold text-[#10120f]">{user?.name?.slice(0, 1).toUpperCase() ?? "U"}</div><div className="min-w-0"><p className="truncate text-sm text-[#e8e8e0]">{user?.name ?? "Workspace user"}</p><p className="truncate font-mono text-[8px] tracking-[.08em] text-[#858b80]">SECURE SESSION</p></div></div><Button variant="ghost" onClick={handleLogout} className="h-9 w-full justify-start text-xs text-[#aab0a5] hover:bg-white/5 hover:text-white"><LogOut className="mr-2 size-3.5" /> Sign out</Button></div>
+            <ProfileControls name={user?.name} language={preferences.data?.preferredLanguage} isSavingLanguage={languagePreference.isPending} onLanguageChange={updateLanguage} subscription={billingStatus.data} subscriptionLoading={billingStatus.isLoading} billingLoading={billingPortal.isPending || checkout.isPending} onUpgrade={startProCheckout} onManagePlan={manageSubscription} onLogout={handleLogout} />
           </div>
         </SheetContent>
       </Sheet>
@@ -224,7 +258,7 @@ export default function Home() {
       <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-[radial-gradient(circle_at_78%_12%,rgba(199,243,107,.08),transparent_26%),#10120f]">
         <header className="flex h-[78px] shrink-0 items-center justify-between border-b border-white/10 px-5 sm:px-8"><div className="flex items-center gap-3"><button type="button" aria-label="Open chat history" onClick={() => setIsMobileNavOpen(true)} className="grid size-8 place-items-center border border-[#c7f36b]/45 bg-[#c7f36b]/10 text-[#c7f36b] transition-colors hover:bg-[#c7f36b]/20 lg:hidden"><PanelLeftClose className="size-4" /></button><div><p className="font-mono text-[9px] tracking-[.13em] text-[#c7f36b]">LIVE ANSWER LOOP</p><h1 className="mt-0.5 font-['Space_Grotesk'] text-base font-medium tracking-[-.03em]">{activeConversation.data?.conversation.title ?? "New conversation"}</h1></div></div><div className="hidden items-center gap-2 font-mono text-[9px] tracking-[.1em] text-[#9fa59a] sm:flex"><span className="size-1.5 rounded-full bg-[#c7f36b]" /> MODEL / READY</div></header>
         <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-6 lg:p-8">
-          {activeConversationId !== null && activeConversation.isLoading ? <div className="grid flex-1 place-items-center"><Loader2 className="size-6 animate-spin text-[#c7f36b]" /></div> : <><>{displayMessages.length === 0 && !sendMessage.isPending ? <OutcomeBlueprint onStart={startOutcomeBlueprint} onUpgrade={startProCheckout} disabled={checkout.isPending} /> : null}</><AIChatBox messages={displayMessages} onSendMessage={handleSend} isLoading={sendMessage.isPending} height="auto" className="mx-auto min-h-0 w-full max-w-5xl flex-1 overflow-hidden rounded-sm border-white/12 bg-[#171a15]/90 shadow-[0_24px_80px_rgba(0,0,0,.22)]" emptyStateMessage="Ask the Companion to clarify a decision, draft a plan, or pressure-test an idea." suggestedPrompts={suggestedPrompts} /></>}
+          {activeConversationId !== null && activeConversation.isLoading ? <div className="grid flex-1 place-items-center"><Loader2 className="size-6 animate-spin text-[#c7f36b]" /></div> : <><>{displayMessages.length === 0 && !sendMessage.isPending ? <OutcomeBlueprint onStart={startOutcomeBlueprint} onUpgrade={startProCheckout} disabled={checkout.isPending} /> : null}</><AIChatBox messages={displayMessages} onSendMessage={handleSend} isLoading={sendMessage.isPending} height="auto" className="mx-auto min-h-0 w-full max-w-5xl flex-1 overflow-hidden rounded-sm border-white/12 bg-[#171a15]/90 shadow-[0_24px_80px_rgba(0,0,0,.22)]" emptyStateMessage="Ask the Companion to clarify a decision, draft a plan, or pressure-test an idea." suggestedPrompts={suggestedPrompts} speechLocale={languageOptionFor(preferences.data?.preferredLanguage).locale} /></>}
           <p className="mx-auto mt-3 flex w-full max-w-5xl items-center gap-2 px-1 font-mono text-[9px] leading-4 tracking-[.06em] text-[#777e73]"><ShieldCheck className="size-3 text-[#c7f36b]" /> RESPONSES ARE GENERATED BY A LIVE MODEL. VERIFY IMPORTANT OUTPUTS BEFORE ACTING.</p>
         </div>
       </section>

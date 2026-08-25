@@ -26,7 +26,8 @@ export function buildCheckoutSessionParams(user: User, productId: BmrProductId, 
     line_items: [{ price_data: product.priceData, quantity: 1 }],
     allow_promotion_codes: true,
     client_reference_id: user.id.toString(),
-    customer_email: user.email ?? undefined,
+    customer: user.stripeCustomerId ?? undefined,
+    customer_email: user.stripeCustomerId ? undefined : user.email ?? undefined,
     metadata: {
       user_id: user.id.toString(),
       customer_email: user.email ?? "",
@@ -41,6 +42,28 @@ export function buildCheckoutSessionParams(user: User, productId: BmrProductId, 
 export async function createBmrCheckoutSession(user: User, productId: BmrProductId, origin: string) {
   const session = await getStripe().checkout.sessions.create(buildCheckoutSessionParams(user, productId, origin));
   if (!session.url) throw new Error("Stripe did not return a Checkout URL");
+  return session.url;
+}
+
+export type BmrSubscriptionSummary = {
+  plan: "free" | "pro";
+  status: string;
+  cancelAtPeriodEnd: boolean;
+  hasBillingPortal: boolean;
+};
+
+export async function getBmrSubscriptionSummary(user: User): Promise<BmrSubscriptionSummary> {
+  if (!user.stripeCustomerId) return { plan: "free", status: "No active subscription", cancelAtPeriodEnd: false, hasBillingPortal: false };
+  const subscriptions = await getStripe().subscriptions.list({ customer: user.stripeCustomerId, status: "all", limit: 10 });
+  const active = subscriptions.data.find(subscription => ["active", "trialing", "past_due", "unpaid"].includes(subscription.status));
+  if (!active) return { plan: "free", status: "No active subscription", cancelAtPeriodEnd: false, hasBillingPortal: true };
+  return { plan: "pro", status: active.status, cancelAtPeriodEnd: active.cancel_at_period_end, hasBillingPortal: true };
+}
+
+export async function createBmrBillingPortalSession(user: User, origin: string) {
+  if (!user.stripeCustomerId) throw new Error("No Stripe billing account is available yet. Choose BMR Pro first to begin a subscription.");
+  const session = await getStripe().billingPortal.sessions.create({ customer: user.stripeCustomerId, return_url: `${origin}/?billing=returned` });
+  if (!session.url) throw new Error("Stripe did not return a billing-management URL");
   return session.url;
 }
 

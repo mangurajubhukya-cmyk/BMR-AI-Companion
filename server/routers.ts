@@ -5,8 +5,10 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { invokeLLM, listLLMModels } from "./_core/llm";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { extractReplyText, makeConversationTitle, MANUS_COMPANION_SYSTEM_PROMPT } from "./chat";
-import { createBmrCheckoutSession, getRequestOrigin } from "./stripe";
+import { extractReplyText, makeBmrSystemPrompt, makeConversationTitle } from "./chat";
+import { createBmrBillingPortalSession, createBmrCheckoutSession, getBmrSubscriptionSummary, getRequestOrigin } from "./stripe";
+import { isLanguagePreference } from "../shared/languages";
+import { updateUserLanguage } from "./db";
 import {
   createConversation,
   createMessage,
@@ -38,12 +40,22 @@ export const appRouter = router({
       return { success: true } as const;
     }),
   }),
+  preferences: router({
+    get: protectedProcedure.query(({ ctx }) => ({ preferredLanguage: ctx.user.preferredLanguage })),
+    setLanguage: protectedProcedure.input(z.object({ preferredLanguage: z.string() })).mutation(async ({ ctx, input }) => {
+      if (!isLanguagePreference(input.preferredLanguage)) throw new TRPCError({ code: "BAD_REQUEST", message: "Unsupported language preference" });
+      await updateUserLanguage(ctx.user.id, input.preferredLanguage);
+      return { preferredLanguage: input.preferredLanguage };
+    }),
+  }),
   billing: router({
     checkout: protectedProcedure.input(z.object({ productId: z.literal("bmr_pro_monthly") })).mutation(async ({ ctx, input }) => {
       const origin = getRequestOrigin(ctx.req);
       const url = await createBmrCheckoutSession(ctx.user, input.productId, origin);
       return { url };
     }),
+    status: protectedProcedure.query(({ ctx }) => getBmrSubscriptionSummary(ctx.user)),
+    portal: protectedProcedure.mutation(async ({ ctx }) => ({ url: await createBmrBillingPortalSession(ctx.user, getRequestOrigin(ctx.req)) })),
   }),
   conversations: router({
     list: protectedProcedure.query(({ ctx }) => listConversationSummaries(ctx.user.id)),
@@ -92,7 +104,7 @@ export const appRouter = router({
         model,
         maxTokens: 900,
         messages: [
-          { role: "system", content: MANUS_COMPANION_SYSTEM_PROMPT },
+          { role: "system", content: makeBmrSystemPrompt(ctx.user.preferredLanguage) },
           ...transcript.slice(-20).map(message => ({ role: message.role, content: message.content })),
         ],
       });

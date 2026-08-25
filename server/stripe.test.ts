@@ -8,6 +8,8 @@ const user: User = {
   name: "BMR Test User",
   email: "test@example.com",
   loginMethod: "manus",
+  preferredLanguage: "auto",
+  stripeCustomerId: null,
   role: "user",
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -28,5 +30,12 @@ describe("BMR Stripe checkout configuration", () => {
       cancel_url: "https://bmr.example/?checkout=cancelled",
     });
     expect(params.line_items?.[0]?.price_data?.unit_amount).toBe(1900);
+  });
+
+  it("reuses the stored Stripe customer for a returning subscriber", () => {
+    const params = buildCheckoutSessionParams({ ...user, stripeCustomerId: "cus_returning_bmr" }, "bmr_pro_monthly", "https://bmr.example");
+
+    expect(params.customer).toBe("cus_returning_bmr");
+    expect(params.customer_email).toBeUndefined();
   });
 });
