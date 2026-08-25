@@ -38,9 +38,11 @@ vi.mock("@/lib/trpc", () => ({
       list: { useQuery: () => ({ data: workspace.conversations, isLoading: false }) },
       get: { useQuery: (input: { conversationId: number }) => ({ data: workspace.details.get(input.conversationId), isLoading: false }) },
       send: { useMutation: (options: unknown) => { workspace.mutations.sendOptions = options; return { mutate: vi.fn(), isPending: false }; } },
+      
       rename: { useMutation: () => ({ mutate: workspace.mutations.rename }) },
       delete: { useMutation: () => ({ mutate: workspace.mutations.delete }) },
     },
+    billing: { checkout: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) } },
   },
 }));
 
@@ -71,6 +73,7 @@ describe("Companion workspace browser-like controls", () => {
 
   afterEach(() => {
     cleanup();
+    window.history.replaceState({}, "", "/");
     vi.unstubAllGlobals();
   });
 
@@ -109,5 +112,15 @@ describe("Companion workspace browser-like controls", () => {
     render(<Home />);
     await user.click(screen.getByRole("button", { name: /Open your workspace/i }));
     expect(workspace.startLogin).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a clear BMR Pro return state after successful Stripe Checkout", async () => {
+    window.history.replaceState({}, "", "/?checkout=success");
+    render(<Home />);
+
+    await waitFor(() => expect(workspace.toast.success).toHaveBeenCalledWith(
+      "BMR Pro checkout complete",
+      expect.objectContaining({ description: expect.stringContaining("Stripe subscription") })
+    ));
   });
 });

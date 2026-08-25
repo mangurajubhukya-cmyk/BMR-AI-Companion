@@ -4,6 +4,7 @@
  */
 import { useAuth } from "@/_core/hooks/useAuth";
 import { AIChatBox, type Message as DisplayMessage } from "@/components/AIChatBox";
+import { OutcomeBlueprint } from "@/components/OutcomeBlueprint";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { companionFailureFeedback } from "@/lib/chatFeedback";
@@ -55,6 +56,16 @@ export default function Home() {
     }
   }, [conversations.data, hasSelectedInitialConversation]);
 
+  useEffect(() => {
+    const checkoutState = new URLSearchParams(window.location.search).get("checkout");
+    if (checkoutState === "success") {
+      toast.success("BMR Pro checkout complete", { description: "Your Stripe subscription is being confirmed. Return to your workboard when ready." });
+    } else if (checkoutState === "cancelled") {
+      toast.error("BMR Pro checkout cancelled", { description: "No payment was taken. You can continue using your current workspace." });
+    }
+    if (checkoutState) window.history.replaceState({}, "", window.location.pathname);
+  }, []);
+
   const sendMessage = trpc.conversations.send.useMutation({
     onSuccess: async (result) => {
       setPendingMessage(null);
@@ -69,6 +80,14 @@ export default function Home() {
       const feedback = companionFailureFeedback(error.message);
       toast.error(feedback.title, { description: feedback.description });
     },
+  });
+
+  const checkout = trpc.billing.checkout.useMutation({
+    onSuccess: ({ url }) => {
+      toast.success("Opening secure BMR Pro checkout", { description: "Stripe Checkout opens in a new tab." });
+      window.open(url, "_blank", "noopener,noreferrer");
+    },
+    onError: error => toast.error("Could not open checkout", { description: error.message }),
   });
 
   const renameConversation = trpc.conversations.rename.useMutation({
@@ -109,6 +128,21 @@ export default function Home() {
   function startNewChat() {
     setPendingMessage(null);
     setActiveConversationId(null);
+  }
+
+  function startOutcomeBlueprint(prompt: string) {
+    if (sendMessage.isPending) return;
+    setActiveConversationId(null);
+    setPendingMessage(prompt);
+    sendMessage.mutate({ content: prompt });
+  }
+
+  function startProCheckout() {
+    if (!isAuthenticated) {
+      startLogin();
+      return;
+    }
+    checkout.mutate({ productId: "bmr_pro_monthly" });
   }
 
   function handleRename(conversationId: number, currentTitle: string) {
@@ -190,7 +224,7 @@ export default function Home() {
       <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-[radial-gradient(circle_at_78%_12%,rgba(199,243,107,.08),transparent_26%),#10120f]">
         <header className="flex h-[78px] shrink-0 items-center justify-between border-b border-white/10 px-5 sm:px-8"><div className="flex items-center gap-3"><button type="button" aria-label="Open chat history" onClick={() => setIsMobileNavOpen(true)} className="grid size-8 place-items-center border border-[#c7f36b]/45 bg-[#c7f36b]/10 text-[#c7f36b] transition-colors hover:bg-[#c7f36b]/20 lg:hidden"><PanelLeftClose className="size-4" /></button><div><p className="font-mono text-[9px] tracking-[.13em] text-[#c7f36b]">LIVE ANSWER LOOP</p><h1 className="mt-0.5 font-['Space_Grotesk'] text-base font-medium tracking-[-.03em]">{activeConversation.data?.conversation.title ?? "New conversation"}</h1></div></div><div className="hidden items-center gap-2 font-mono text-[9px] tracking-[.1em] text-[#9fa59a] sm:flex"><span className="size-1.5 rounded-full bg-[#c7f36b]" /> MODEL / READY</div></header>
         <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-6 lg:p-8">
-          {activeConversationId !== null && activeConversation.isLoading ? <div className="grid flex-1 place-items-center"><Loader2 className="size-6 animate-spin text-[#c7f36b]" /></div> : <AIChatBox messages={displayMessages} onSendMessage={handleSend} isLoading={sendMessage.isPending} height="auto" className="mx-auto min-h-0 w-full max-w-5xl flex-1 overflow-hidden rounded-sm border-white/12 bg-[#171a15]/90 shadow-[0_24px_80px_rgba(0,0,0,.22)]" emptyStateMessage="Ask the Companion to clarify a decision, draft a plan, or pressure-test an idea." suggestedPrompts={suggestedPrompts} />}
+          {activeConversationId !== null && activeConversation.isLoading ? <div className="grid flex-1 place-items-center"><Loader2 className="size-6 animate-spin text-[#c7f36b]" /></div> : <><>{displayMessages.length === 0 && !sendMessage.isPending ? <OutcomeBlueprint onStart={startOutcomeBlueprint} onUpgrade={startProCheckout} disabled={checkout.isPending} /> : null}</><AIChatBox messages={displayMessages} onSendMessage={handleSend} isLoading={sendMessage.isPending} height="auto" className="mx-auto min-h-0 w-full max-w-5xl flex-1 overflow-hidden rounded-sm border-white/12 bg-[#171a15]/90 shadow-[0_24px_80px_rgba(0,0,0,.22)]" emptyStateMessage="Ask the Companion to clarify a decision, draft a plan, or pressure-test an idea." suggestedPrompts={suggestedPrompts} /></>}
           <p className="mx-auto mt-3 flex w-full max-w-5xl items-center gap-2 px-1 font-mono text-[9px] leading-4 tracking-[.06em] text-[#777e73]"><ShieldCheck className="size-3 text-[#c7f36b]" /> RESPONSES ARE GENERATED BY A LIVE MODEL. VERIFY IMPORTANT OUTPUTS BEFORE ACTING.</p>
         </div>
       </section>

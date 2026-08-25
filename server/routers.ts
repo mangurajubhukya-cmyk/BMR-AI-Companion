@@ -6,6 +6,7 @@ import { invokeLLM, listLLMModels } from "./_core/llm";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { extractReplyText, makeConversationTitle, MANUS_COMPANION_SYSTEM_PROMPT } from "./chat";
+import { createBmrCheckoutSession, getRequestOrigin } from "./stripe";
 import {
   createConversation,
   createMessage,
@@ -35,6 +36,13 @@ export const appRouter = router({
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
+    }),
+  }),
+  billing: router({
+    checkout: protectedProcedure.input(z.object({ productId: z.literal("bmr_pro_monthly") })).mutation(async ({ ctx, input }) => {
+      const origin = getRequestOrigin(ctx.req);
+      const url = await createBmrCheckoutSession(ctx.user, input.productId, origin);
+      return { url };
     }),
   }),
   conversations: router({
