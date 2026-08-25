@@ -45,4 +45,4 @@
 - [x] Add a profile subscription section showing current BMR Pro status, upgrade, and secure Stripe billing-management controls.
 - [x] Add secure Stripe customer-portal and subscription-status server procedures without persisting sensitive payment details.
 - [x] Test language, voice, subscription status, checkout, and portal entry flows across browser-ready states.
-- [ ] Save and deliver the global-ready subscription and multilingual update with setup guidance.
+- [x] Save and deliver the global-ready subscription and multilingual update with setup guidance.
