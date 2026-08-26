@@ -55,3 +55,16 @@
 - [x] Test responsive plans, checkout-return, and new-chat behavior, then save and deliver the upgrade.
 - [x] Show the active Free Trial, BMR Credit, or BMR Ultra context and allowance on the new-chat board.
 - [x] Re-run validation, save the plan/new-chat release checkpoint, and deliver the upgrade.
+- [x] Move profile and plan-upgrade controls into a compact account area fixed at the bottom of the workspace navigation.
+- [x] Replace persistent language settings with automatic language matching and an optional language picker only when needed.
+- [x] Strengthen same-language model instructions and browser voice fallback messaging for multilingual speech and typed prompts.
+- [x] Add a clear payment-launch status explaining Stripe sandbox, live verification, and bank-payout onboarding requirements.
+- [x] Test the revised account controls, language behavior, and payment-readiness states, then save and deliver the update.
+- [x] Research Stripe country availability and design country-appropriate global payment onboarding guidance.
+- [x] Select a distinct publish-ready product name and replace the current brand consistently.
+- [x] Audit visible copy, assets, and third-party dependencies for publication-ready intellectual-property safeguards.
+- [x] Add global payment availability and publication-readiness guidance to the product and documentation.
+- [x] Validate the global launch update, save a checkpoint, and deliver the result.
+- [x] Align the automatic-language product behavior with the persisted preference router, tests, and global experience documentation.
+- [x] Replace remaining public BMR copy with the Zynvori AI working brand and flag the name as requiring formal clearance before legal finalization.
+- [x] Inventory third-party packages, fonts, and visual assets; record the publication-relevant license or ownership status.

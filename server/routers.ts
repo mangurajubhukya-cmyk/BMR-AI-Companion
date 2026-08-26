@@ -7,8 +7,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { extractReplyText, makeBmrSystemPrompt, makeConversationTitle } from "./chat";
 import { createBmrBillingPortalSession, createBmrCheckoutSession, getBmrSubscriptionSummary, getRequestOrigin } from "./stripe";
-import { isLanguagePreference } from "../shared/languages";
-import { updateUserLanguage } from "./db";
+import { transcribeVoiceInput } from "./voice";
 import {
   createConversation,
   createMessage,
@@ -40,14 +39,6 @@ export const appRouter = router({
       return { success: true } as const;
     }),
   }),
-  preferences: router({
-    get: protectedProcedure.query(({ ctx }) => ({ preferredLanguage: ctx.user.preferredLanguage })),
-    setLanguage: protectedProcedure.input(z.object({ preferredLanguage: z.string() })).mutation(async ({ ctx, input }) => {
-      if (!isLanguagePreference(input.preferredLanguage)) throw new TRPCError({ code: "BAD_REQUEST", message: "Unsupported language preference" });
-      await updateUserLanguage(ctx.user.id, input.preferredLanguage);
-      return { preferredLanguage: input.preferredLanguage };
-    }),
-  }),
   billing: router({
     checkout: protectedProcedure.input(z.object({ productId: z.enum(["bmr_credit_monthly", "bmr_ultra_monthly"]) })).mutation(async ({ ctx, input }) => {
       const origin = getRequestOrigin(ctx.req);
@@ -56,6 +47,18 @@ export const appRouter = router({
     }),
     status: protectedProcedure.query(({ ctx }) => getBmrSubscriptionSummary(ctx.user)),
     portal: protectedProcedure.mutation(async ({ ctx }) => ({ url: await createBmrBillingPortalSession(ctx.user, getRequestOrigin(ctx.req)) })),
+  }),
+  voice: router({
+    transcribe: protectedProcedure.input(z.object({
+      audioBase64: z.string().min(1).max(24_000_000),
+      mimeType: z.enum(["audio/webm", "audio/ogg", "audio/wav", "audio/mpeg", "audio/mp4"]),
+    })).mutation(async ({ input }) => {
+      try {
+        return await transcribeVoiceInput(input.audioBase64, input.mimeType);
+      } catch (error) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "Voice transcription could not be completed." });
+      }
+    }),
   }),
   conversations: router({
     list: protectedProcedure.query(({ ctx }) => listConversationSummaries(ctx.user.id)),
@@ -104,7 +107,7 @@ export const appRouter = router({
         model,
         maxTokens: 900,
         messages: [
-          { role: "system", content: makeBmrSystemPrompt(ctx.user.preferredLanguage) },
+          { role: "system", content: makeBmrSystemPrompt("auto") },
           ...transcript.slice(-20).map(message => ({ role: message.role, content: message.content })),
         ],
       });

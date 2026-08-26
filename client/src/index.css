@@ -58,7 +58,9 @@
 @layer base {
   * { @apply border-border outline-ring/50; }
   html { scroll-behavior: smooth; background: #10120f; }
-  body { @apply bg-background text-foreground; font-family: "DM Sans", sans-serif; }
+  body { @apply bg-background text-foreground; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  [class~="font-['Space_Grotesk']"] { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important; }
+  [class~="font-mono"] { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
   button:not(:disabled), a[href], input:not(:disabled) { @apply cursor-pointer; }
   ::selection { background: #c7f36b; color: #10120f; }
 }

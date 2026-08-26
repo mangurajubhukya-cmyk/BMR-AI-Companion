@@ -19,12 +19,12 @@ describe("OutcomeBlueprint", () => {
     expect(onStart).toHaveBeenCalledWith(expect.stringContaining("Do not promise income"));
   });
 
-  it("invokes the upgrade action from the BMR Pro subscription entry point", async () => {
+  it("invokes the upgrade action from the Zynvori plan comparison entry point", async () => {
     const user = userEvent.setup();
     const onUpgrade = vi.fn();
     render(<OutcomeBlueprint onStart={vi.fn()} onUpgrade={onUpgrade} />);
 
-    await user.click(screen.getByRole("button", { name: /Unlock BMR Pro/i }));
+    await user.click(screen.getByRole("button", { name: /Compare Zynvori plans/i }));
 
     expect(onUpgrade).toHaveBeenCalledTimes(1);
   });

@@ -75,6 +75,13 @@ describe("AIChatBox browser controls", () => {
     expect(onViewPlans).toHaveBeenCalledTimes(1);
   });
 
+  it("shows the automatic language-detection voice path when server transcription is available", () => {
+    render(<AIChatBox messages={[]} onSendMessage={vi.fn()} height="320px" onTranscribeAudio={vi.fn().mockResolvedValue("Detected speech")} />);
+
+    expect(screen.getByText("VOICE INPUT / RECORD • AUTO-DETECT LANGUAGE")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Start automatic voice input" })).toBeTruthy();
+  });
+
   it("explains when browser dictation is unavailable", async () => {
     const user = userEvent.setup();
     render(<AIChatBox messages={[]} onSendMessage={vi.fn()} height="320px" />);

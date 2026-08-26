@@ -8,21 +8,21 @@ import { ProfileControls } from "./ProfileControls";
 describe("ProfileControls", () => {
   afterEach(() => cleanup());
 
-  it("persists a selected Indian language through the language callback", async () => {
+  it("keeps the free account upgrade action in the compact profile area", async () => {
     const user = userEvent.setup();
-    const onLanguageChange = vi.fn();
-    render(<ProfileControls name="Mira" language="auto" onLanguageChange={onLanguageChange} onUpgrade={vi.fn()} onManagePlan={vi.fn()} onLogout={vi.fn()} />);
+    const onUpgrade = vi.fn();
+    render(<ProfileControls name="Mira" onUpgrade={onUpgrade} onManagePlan={vi.fn()} onLogout={vi.fn()} />);
 
-    await user.selectOptions(screen.getByRole("combobox", { name: /response and voice language/i }), "te");
+    expect(screen.getByText("Free Trial")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: /compare zynvori plans/i }));
 
-    expect(onLanguageChange).toHaveBeenCalledWith("te");
-    expect(screen.getByRole("option", { name: /Telugu/i })).toBeTruthy();
+    expect(onUpgrade).toHaveBeenCalledTimes(1);
   });
 
   it("gives a Pro subscriber a plan-management entry point rather than an upgrade-only control", async () => {
     const user = userEvent.setup();
     const onManagePlan = vi.fn();
-    render(<ProfileControls name="Mira" language="hi" onLanguageChange={vi.fn()} subscription={{ plan: "pro", status: "active", cancelAtPeriodEnd: false, hasBillingPortal: true }} onUpgrade={vi.fn()} onManagePlan={onManagePlan} onLogout={vi.fn()} />);
+    render(<ProfileControls name="Mira" subscription={{ plan: "pro", status: "active", cancelAtPeriodEnd: false, hasBillingPortal: true }} onUpgrade={vi.fn()} onManagePlan={onManagePlan} onLogout={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: /manage or cancel plan/i }));
 

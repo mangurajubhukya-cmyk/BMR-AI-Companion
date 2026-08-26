@@ -26,6 +26,6 @@ describe("chat response helpers", () => {
 
   it("includes the chosen Telugu response instruction in the model prompt", () => {
     expect(makeBmrSystemPrompt("te")).toContain("Reply in Telugu");
-    expect(makeBmrSystemPrompt("auto")).toContain("Automatically detect the language");
+    expect(makeBmrSystemPrompt("auto")).toContain("Reply entirely in that same language and script");
   });
 });

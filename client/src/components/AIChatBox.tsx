@@ -42,6 +42,7 @@ export type AIChatBoxProps = {
   speechLocale?: string;
   autoFocus?: boolean;
   planContext?: { name: string; allowance: string; onViewPlans?: () => void };
+  onTranscribeAudio?: (audio: { audioBase64: string; mimeType: "audio/webm" | "audio/ogg" | "audio/wav" | "audio/mpeg" | "audio/mp4" }) => Promise<string>;
 };
 
 export function AIChatBox({
@@ -56,9 +57,12 @@ export function AIChatBox({
   speechLocale = "auto",
   autoFocus = false,
   planContext,
+  onTranscribeAudio,
 }: AIChatBoxProps) {
   const [input, setInput] = useState("");
   const [isListening, setIsListening] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState<boolean | null>(null);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
@@ -66,6 +70,8 @@ export function AIChatBox({
   const viewportRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recorderStreamRef = useRef<MediaStream | null>(null);
 
   const displayMessages = messages.filter(message => message.role !== "system");
 
@@ -82,6 +88,8 @@ export function AIChatBox({
 
   useEffect(() => () => {
     recognitionRef.current?.stop();
+    recorderRef.current?.stop();
+    recorderStreamRef.current?.getTracks().forEach(track => track.stop());
     window.speechSynthesis?.cancel();
   }, []);
 
@@ -103,7 +111,59 @@ export function AIChatBox({
     textareaRef.current?.focus();
   }
 
-  function toggleDictation() {
+  async function startAutomaticRecording() {
+    if (!onTranscribeAudio || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") return false;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const preferredMime = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"].find(type => MediaRecorder.isTypeSupported(type));
+      const recorder = preferredMime ? new MediaRecorder(stream, { mimeType: preferredMime }) : new MediaRecorder(stream);
+      const chunks: BlobPart[] = [];
+      recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+      recorder.onerror = () => setVoiceError("Voice recording stopped unexpectedly. Please try again or type your message.");
+      recorder.onstop = async () => {
+        setIsRecording(false);
+        stream.getTracks().forEach(track => track.stop());
+        const rawMime = recorder.mimeType.split(";")[0] || "audio/webm";
+        const mimeType = (["audio/webm", "audio/ogg", "audio/wav", "audio/mpeg", "audio/mp4"].includes(rawMime) ? rawMime : "audio/webm") as "audio/webm" | "audio/ogg" | "audio/wav" | "audio/mpeg" | "audio/mp4";
+        const recording = new Blob(chunks, { type: mimeType });
+        if (!recording.size) return setVoiceError("The recording was empty. Please try again or type your message.");
+        if (recording.size > 16 * 1024 * 1024) return setVoiceError("The recording is too large. Please use a shorter voice message.");
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+          reader.onerror = () => reject(new Error("Could not read the recording."));
+          reader.readAsDataURL(recording);
+        });
+        try {
+          setIsTranscribing(true);
+          setVoiceError(null);
+          const transcript = await onTranscribeAudio({ audioBase64: base64, mimeType });
+          setInput(transcript);
+          textareaRef.current?.focus();
+        } catch (error) {
+          setVoiceError(error instanceof Error ? error.message : "Voice transcription could not be completed. Please type your message.");
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+      recorderRef.current = recorder;
+      recorderStreamRef.current = stream;
+      setVoiceError(null);
+      setIsRecording(true);
+      recorder.start();
+      return true;
+    } catch (error) {
+      setVoiceError(error instanceof DOMException && error.name === "NotAllowedError" ? "Microphone permission was denied. Enable it in your browser settings to speak a message." : "Voice recording is unavailable in this browser. You can still type your message.");
+      return true;
+    }
+  }
+
+  async function toggleDictation() {
+    if (isRecording) {
+      recorderRef.current?.stop();
+      return;
+    }
+    if (onTranscribeAudio && await startAutomaticRecording()) return;
     if (!voiceSupported) {
       setVoiceError("Voice dictation is not supported by this browser. You can still type your message.");
       return;
@@ -202,10 +262,10 @@ export function AIChatBox({
       {voiceError ? <div className="mx-4 mb-1 flex items-start gap-2 border border-amber-300/20 bg-amber-300/5 px-3 py-2 text-xs leading-5 text-amber-100/80"><AlertCircle className="mt-0.5 size-3.5 shrink-0" /> <span>{voiceError}</span><button type="button" className="ml-auto text-[10px] uppercase tracking-[.1em] text-amber-100" onClick={() => setVoiceError(null)}>Dismiss</button></div> : null}
       <form onSubmit={handleSubmit} className="flex items-end gap-2 border-t border-white/10 bg-black/10 p-4">
         <Textarea ref={textareaRef} value={input} onChange={event => setInput(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} placeholder={placeholder} className="min-h-10 max-h-32 flex-1 resize-none border-white/15 bg-white/[.025] text-[#ecede5] placeholder:text-[#737a70] focus-visible:ring-[#c7f36b]" rows={1} />
-        <Button type="button" variant="outline" onClick={toggleDictation} disabled={isLoading} className={cn("size-10 shrink-0 rounded-sm border-white/15 bg-transparent p-0 text-[#c9cdc3] hover:bg-white/10 hover:text-[#c7f36b]", isListening && "border-[#c7f36b]/70 bg-[#c7f36b]/10 text-[#c7f36b]")} aria-label={isListening ? "Stop voice dictation" : "Start voice dictation"}>{isListening ? <MicOff className="size-4" /> : <Mic className="size-4" />}</Button>
+        <Button type="button" variant="outline" onClick={toggleDictation} disabled={isLoading || isTranscribing} className={cn("size-10 shrink-0 rounded-sm border-white/15 bg-transparent p-0 text-[#c9cdc3] hover:bg-white/10 hover:text-[#c7f36b]", (isListening || isRecording) && "border-[#c7f36b]/70 bg-[#c7f36b]/10 text-[#c7f36b]")} aria-label={isRecording ? "Stop voice recording" : isListening ? "Stop voice dictation" : onTranscribeAudio ? "Start automatic voice input" : "Start voice dictation"}>{isRecording || isListening ? <MicOff className="size-4" /> : isTranscribing ? <Loader2 className="size-4 animate-spin" /> : <Mic className="size-4" />}</Button>
         <Button type="submit" disabled={!input.trim() || isLoading} className="size-10 shrink-0 rounded-sm bg-primary p-0 text-primary-foreground hover:bg-[#dafb94]" aria-label="Send message">{isLoading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}</Button>
       </form>
-      <p className="border-t border-white/5 px-4 py-2 font-mono text-[8px] tracking-[.07em] text-[#72796f]">{isListening ? "VOICE INPUT / LISTENING…" : voiceSupported === false ? "VOICE INPUT / BROWSER NOT SUPPORTED" : "VOICE INPUT / MIC • VOICE OUTPUT / PLAY"}</p>
+      <p className="border-t border-white/5 px-4 py-2 font-mono text-[8px] tracking-[.07em] text-[#72796f]">{isRecording ? "VOICE INPUT / RECORDING…" : isTranscribing ? "VOICE INPUT / DETECTING SPOKEN LANGUAGE…" : isListening ? "VOICE INPUT / LISTENING…" : onTranscribeAudio ? "VOICE INPUT / RECORD • AUTO-DETECT LANGUAGE" : voiceSupported === false ? "VOICE INPUT / BROWSER NOT SUPPORTED" : "VOICE INPUT / MIC • VOICE OUTPUT / PLAY"}</p>
     </div>
   );
 }

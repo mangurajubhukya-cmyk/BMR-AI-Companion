@@ -51,6 +51,9 @@ vi.mock("@/lib/trpc", () => ({
       status: { useQuery: () => ({ data: { plan: "free", status: "No active subscription", cancelAtPeriodEnd: false, hasBillingPortal: false }, isLoading: false }) },
       portal: { useMutation: () => ({ mutate: workspace.mutations.portal, isPending: false }) },
     },
+    voice: {
+      transcribe: { useMutation: () => ({ mutateAsync: vi.fn().mockResolvedValue({ text: "Detected voice message", detectedLanguage: "en" }), isPending: false }) },
+    },
   },
 }));
 
@@ -126,12 +129,12 @@ describe("Companion workspace browser-like controls", () => {
     expect(workspace.startLogin).toHaveBeenCalledTimes(1);
   });
 
-  it("shows a clear BMR plan return state after successful Stripe Checkout", async () => {
+  it("shows a clear Zynvori plan return state after successful Stripe Checkout", async () => {
     window.history.replaceState({}, "", "/?checkout=success");
     render(<Home />);
 
     await waitFor(() => expect(workspace.toast.success).toHaveBeenCalledWith(
-      "BMR plan checkout complete",
+      "Zynvori plan checkout complete",
       expect.objectContaining({ description: expect.stringContaining("Stripe subscription") })
     ));
   });
