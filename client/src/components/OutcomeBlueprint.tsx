@@ -1,5 +1,5 @@
 /**
- * Zynvori AI outcome blueprints: concise, evidence-aware workboard starters that turn a blank chat into a guided professional workflow.
+ * BMR AI CHATBOART outcome blueprints: concise, evidence-aware workboard starters that turn a blank chat into a guided professional workflow.
  */
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, BadgeDollarSign, CheckCircle2, FilePenLine, MessageSquareText } from "lucide-react";
@@ -61,10 +61,10 @@ export function OutcomeBlueprint({ onStart, onUpgrade, disabled = false }: Outco
         ))}
       </div>
       <div className="mt-3 flex flex-col gap-3 border-t border-white/8 pt-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs leading-5 text-[#aab0a5]"><span className="font-medium text-[#f0f1e9]">Zynvori plans from $5 per month</span> — retain workboards, reusable templates, voice intake, and review-first planning.</p>
-        <Button type="button" disabled={disabled} onClick={onUpgrade} className="h-9 shrink-0 rounded-none bg-[#c7f36b] px-3 text-xs font-semibold text-[#10120f] hover:bg-[#dafb94]">Compare Zynvori plans <ArrowUpRight className="ml-1.5 size-3.5" /></Button>
+        <p className="text-xs leading-5 text-[#aab0a5]"><span className="font-medium text-[#f0f1e9]">BMR plans from $5 per month</span> — retain workboards, reusable templates, voice intake, and review-first planning.</p>
+        <Button type="button" disabled={disabled} onClick={onUpgrade} className="h-9 shrink-0 rounded-none bg-[#c7f36b] px-3 text-xs font-semibold text-[#10120f] hover:bg-[#dafb94]">Compare BMR plans <ArrowUpRight className="ml-1.5 size-3.5" /></Button>
       </div>
-      <p className="mt-3 font-mono text-[8px] tracking-[.07em] text-[#7d8579]">ZYNVORI MAKES A DRAFT AND A REVIEW PLAN — YOU MAKE THE FINAL BUSINESS DECISION.</p>
+      <p className="mt-3 font-mono text-[8px] tracking-[.07em] text-[#7d8579]">BMR MAKES A DRAFT AND A REVIEW PLAN — YOU MAKE THE FINAL BUSINESS DECISION.</p>
     </section>
   );
 }

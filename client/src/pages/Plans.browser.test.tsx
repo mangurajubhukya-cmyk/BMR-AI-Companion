@@ -52,18 +52,18 @@ describe("BMR in-app plan journey", () => {
     render(<Plans />);
 
     expect(screen.getByRole("heading", { name: "Free Trial" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Zynvori Credit" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Zynvori Ultra" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "BMR Credit" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "BMR Ultra" })).toBeTruthy();
     expect(screen.getByText("10 standard chat replies each day")).toBeTruthy();
-    expect(screen.getAllByText("300 Zynvori credits each month").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("1,500 Zynvori credits each month").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("300 BMR credits each month").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1,500 BMR credits each month").length).toBeGreaterThan(0);
   });
 
   it("keeps paid plan selection in the app before checkout", async () => {
     const user = userEvent.setup();
     render(<Plans />);
 
-    await user.click(screen.getByRole("button", { name: "Choose Zynvori Credit" }));
+    await user.click(screen.getByRole("button", { name: "Choose BMR Credit" }));
 
     expect(window.location.pathname).toBe("/checkout/bmr_credit_monthly");
   });
@@ -73,7 +73,7 @@ describe("BMR in-app plan journey", () => {
     const user = userEvent.setup();
     render(<Checkout />);
 
-    expect(screen.getAllByText("1,500 Zynvori credits each month").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1,500 BMR credits each month").length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: /continue to secure payment/i }));
     expect(state.checkout).toHaveBeenCalledWith({ productId: "bmr_ultra_monthly" });
   });
@@ -83,7 +83,7 @@ describe("BMR in-app plan journey", () => {
     const user = userEvent.setup();
     render(<Plans />);
 
-    await user.click(screen.getByRole("button", { name: "Choose Zynvori Ultra" }));
+    await user.click(screen.getByRole("button", { name: "Choose BMR Ultra" }));
     expect(state.startLogin).toHaveBeenCalledTimes(1);
   });
 });

@@ -68,3 +68,6 @@
 - [x] Align the automatic-language product behavior with the persisted preference router, tests, and global experience documentation.
 - [x] Replace remaining public BMR copy with the Zynvori AI working brand and flag the name as requiring formal clearance before legal finalization.
 - [x] Inventory third-party packages, fonts, and visual assets; record the publication-relevant license or ownership status.
+- [x] Restore BMR branding across all visible workspace, plan, checkout, and browser metadata surfaces.
+- [x] Reduce the bottom profile and plan control footprint while retaining plan comparison, billing, and sign-out actions.
+- [x] Validate the BMR brand restoration and compact responsive sidebar, then save and deliver the update.

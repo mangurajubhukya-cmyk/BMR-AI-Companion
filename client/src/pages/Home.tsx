@@ -65,10 +65,10 @@ export default function Home() {
   useEffect(() => {
     const checkoutState = new URLSearchParams(window.location.search).get("checkout");
     if (checkoutState === "success") {
-      toast.success("Zynvori plan checkout complete", { description: "Your Stripe subscription is being confirmed. Return to your workspace when ready." });
+      toast.success("BMR plan checkout complete", { description: "Your Stripe subscription is being confirmed. Return to your workspace when ready." });
       void utils.billing.status.invalidate();
     } else if (checkoutState === "cancelled") {
-      toast.error("Zynvori plan checkout cancelled", { description: "No payment was taken. You can continue using your current workspace." });
+      toast.error("BMR plan checkout cancelled", { description: "No payment was taken. You can continue using your current workspace." });
     }
     if (checkoutState) window.history.replaceState({}, "", window.location.pathname);
   }, []);
@@ -174,11 +174,11 @@ export default function Home() {
       <main className="relative isolate grid min-h-screen overflow-hidden bg-[#10120f] px-6 py-8 text-[#f3f2eb] sm:px-10 lg:grid-cols-[1.1fr_.9fr] lg:px-[9vw]">
         <div className="pointer-events-none absolute inset-0 -z-10 opacity-40 [background-image:linear-gradient(rgba(242,241,234,.045)_1px,transparent_1px),linear-gradient(90deg,rgba(242,241,234,.045)_1px,transparent_1px)] [background-size:72px_72px]" />
         <section className="flex max-w-2xl flex-col justify-between py-4 lg:py-12">
-          <div className="flex items-center gap-3 font-mono text-[11px] tracking-[.16em] text-[#c7f36b]"><SignalMark className="size-8" /> ZYNVORI AI / WORKSPACE</div>
+          <div className="flex items-center gap-3 font-mono text-[11px] tracking-[.16em] text-[#c7f36b]"><SignalMark className="size-8" /> BMR AI / CHATBOART</div>
           <div className="my-16 lg:my-0">
             <p className="mb-5 flex items-center gap-2 font-mono text-[10px] tracking-[.14em] text-[#c7f36b]"><span className="size-2 rounded-full bg-[#c7f36b]" /> PRIVATE WORKSPACE / READY</p>
             <h1 className="max-w-xl font-['Space_Grotesk'] text-5xl font-semibold leading-[.92] tracking-[-.07em] sm:text-7xl">Bring the work.<br /><span className="text-[#c7f36b]">Keep</span> the context.</h1>
-            <p className="mt-7 max-w-lg text-base leading-7 text-[#b8bbb0]">Sign in to start a real conversation with Zynvori AI. Your chat history is saved to your workspace, so you can return to decisions instead of starting over.</p>
+            <p className="mt-7 max-w-lg text-base leading-7 text-[#b8bbb0]">Sign in to start a real conversation with BMR AI CHATBOART. Your chat history is saved to your workspace, so you can return to decisions instead of starting over.</p>
             <Button onClick={startLogin} className="mt-9 h-12 rounded-sm bg-[#c7f36b] px-5 font-semibold text-[#10120f] hover:bg-[#dafb94]">
               Open your workspace <Sparkles className="ml-2 size-4" />
             </Button>
@@ -202,7 +202,7 @@ export default function Home() {
   return (
     <main className="flex h-screen min-h-screen overflow-hidden bg-[#10120f] text-[#f3f2eb]">
       <aside className="hidden w-[290px] shrink-0 flex-col border-r border-white/10 bg-[#141712] lg:flex">
-        <div className="flex h-[78px] items-center gap-3 border-b border-white/10 px-6"><SignalMark className="size-7" /><div><p className="font-['Space_Grotesk'] text-xs font-semibold tracking-[.14em]">ZYNVORI AI / WORKSPACE</p><p className="mt-0.5 font-mono text-[8px] tracking-[.12em] text-[#8d9388]">WORKSPACE / ACTIVE</p></div></div>
+        <div className="flex h-[78px] items-center gap-3 border-b border-white/10 px-6"><SignalMark className="size-7" /><div><p className="font-['Space_Grotesk'] text-xs font-semibold tracking-[.14em]">BMR AI / CHATBOART</p><p className="mt-0.5 font-mono text-[8px] tracking-[.12em] text-[#8d9388]">WORKSPACE / ACTIVE</p></div></div>
         <div className="p-4"><Button onClick={startNewChat} className="h-10 w-full justify-start rounded-sm bg-[#c7f36b] px-3 text-sm font-semibold text-[#10120f] hover:bg-[#dafb94]"><MessageSquarePlus className="mr-2 size-4" /> New chat</Button></div>
         <div className="flex items-center gap-2 px-5 pb-3 font-mono text-[9px] tracking-[.12em] text-[#858b80]"><MessageCircle className="size-3 text-[#c7f36b]" /> CHAT HISTORY</div>
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
@@ -220,7 +220,7 @@ export default function Home() {
         <SheetContent side="left" className="w-[86vw] border-white/10 bg-[#141712] p-0 text-[#f3f2eb] sm:max-w-sm">
           <SheetTitle className="sr-only">Chat history and profile</SheetTitle>
           <div className="flex h-full min-h-0 flex-col pt-5">
-            <div className="flex items-center gap-3 border-b border-white/10 px-6 pb-5"><SignalMark className="size-7" /><div><p className="font-['Space_Grotesk'] text-xs font-semibold tracking-[.14em]">ZYNVORI AI / WORKSPACE</p><p className="mt-0.5 font-mono text-[8px] tracking-[.12em] text-[#8d9388]">WORKSPACE / ACTIVE</p></div></div>
+            <div className="flex items-center gap-3 border-b border-white/10 px-6 pb-5"><SignalMark className="size-7" /><div><p className="font-['Space_Grotesk'] text-xs font-semibold tracking-[.14em]">BMR AI / CHATBOART</p><p className="mt-0.5 font-mono text-[8px] tracking-[.12em] text-[#8d9388]">WORKSPACE / ACTIVE</p></div></div>
             <div className="p-4"><Button onClick={() => { startNewChat(); setIsMobileNavOpen(false); }} className="h-10 w-full justify-start rounded-sm bg-[#c7f36b] px-3 text-sm font-semibold text-[#10120f] hover:bg-[#dafb94]"><MessageSquarePlus className="mr-2 size-4" /> New chat</Button></div>
             <div className="flex items-center gap-2 px-5 pb-3 font-mono text-[9px] tracking-[.12em] text-[#858b80]"><MessageCircle className="size-3 text-[#c7f36b]" /> CHAT HISTORY</div>
             <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
@@ -234,7 +234,7 @@ export default function Home() {
       <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-[radial-gradient(circle_at_78%_12%,rgba(199,243,107,.08),transparent_26%),#10120f]">
         <header className="flex h-[78px] shrink-0 items-center justify-between border-b border-white/10 px-5 sm:px-8"><div className="flex items-center gap-3"><button type="button" aria-label="Open chat history" onClick={() => setIsMobileNavOpen(true)} className="grid size-8 place-items-center border border-[#c7f36b]/45 bg-[#c7f36b]/10 text-[#c7f36b] transition-colors hover:bg-[#c7f36b]/20 lg:hidden"><PanelLeftClose className="size-4" /></button><div><p className="font-mono text-[9px] tracking-[.13em] text-[#c7f36b]">LIVE ANSWER LOOP</p><h1 className="mt-0.5 font-['Space_Grotesk'] text-base font-medium tracking-[-.03em]">{activeConversation.data?.conversation.title ?? "New conversation"}</h1></div></div><div className="hidden items-center gap-2 font-mono text-[9px] tracking-[.1em] text-[#9fa59a] sm:flex"><span className="size-1.5 rounded-full bg-[#c7f36b]" /> MODEL / READY</div></header>
         <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-6 lg:p-8">
-          {activeConversationId !== null && activeConversation.isLoading ? <div className="grid flex-1 place-items-center"><Loader2 className="size-6 animate-spin text-[#c7f36b]" /></div> : <AIChatBox messages={displayMessages} onSendMessage={handleSend} onTranscribeAudio={transcribeVoice} isLoading={sendMessage.isPending} height="auto" className="mx-auto min-h-0 w-full max-w-5xl flex-1 overflow-hidden rounded-sm border-white/12 bg-[#171a15]/90 shadow-[0_24px_80px_rgba(0,0,0,.22)]" emptyStateMessage="Start a new chat in any language. Speak or type naturally and Zynvori will answer in that same language." suggestedPrompts={["Plan a Client Win Sprint for my service", "Turn this idea into a content brief", "Translate this reply into Telugu", "Help me respond to a customer clearly"]} speechLocale="auto" autoFocus={activeConversationId === null} planContext={activeConversationId === null ? { name: activePlan.name, allowance: activePlan.allowance, onViewPlans: () => setLocation("/plans") } : undefined} />}
+          {activeConversationId !== null && activeConversation.isLoading ? <div className="grid flex-1 place-items-center"><Loader2 className="size-6 animate-spin text-[#c7f36b]" /></div> : <AIChatBox messages={displayMessages} onSendMessage={handleSend} onTranscribeAudio={transcribeVoice} isLoading={sendMessage.isPending} height="auto" className="mx-auto min-h-0 w-full max-w-5xl flex-1 overflow-hidden rounded-sm border-white/12 bg-[#171a15]/90 shadow-[0_24px_80px_rgba(0,0,0,.22)]" emptyStateMessage="Start a new chat in any language. Speak or type naturally and BMR will answer in that same language." suggestedPrompts={["Plan a Client Win Sprint for my service", "Turn this idea into a content brief", "Translate this reply into Telugu", "Help me respond to a customer clearly"]} speechLocale="auto" autoFocus={activeConversationId === null} planContext={activeConversationId === null ? { name: activePlan.name, allowance: activePlan.allowance, onViewPlans: () => setLocation("/plans") } : undefined} />}
           <p className="mx-auto mt-3 flex w-full max-w-5xl items-center gap-2 px-1 font-mono text-[9px] leading-4 tracking-[.06em] text-[#777e73]"><ShieldCheck className="size-3 text-[#c7f36b]" /> RESPONSES ARE GENERATED BY A LIVE MODEL. VERIFY IMPORTANT OUTPUTS BEFORE ACTING.</p>
         </div>
       </section>

@@ -30,6 +30,6 @@ export async function transcribeVoiceInput(audioBase64: string, mimeType: string
   });
   if (!response.ok) throw new Error("Voice transcription is temporarily unavailable. You can still type your message.");
   const result = await response.json() as { text?: unknown; language?: unknown };
-  if (typeof result.text !== "string" || !result.text.trim()) throw new Error("Zynvori could not hear a clear message. Please try again or type it.");
+  if (typeof result.text !== "string" || !result.text.trim()) throw new Error("BMR could not hear a clear message. Please try again or type it.");
   return { text: result.text.trim(), detectedLanguage: typeof result.language === "string" ? result.language : null };
 }

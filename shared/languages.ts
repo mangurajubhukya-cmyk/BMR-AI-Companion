@@ -1,5 +1,5 @@
 /**
- * Zynvori language metadata uses standard BCP 47 locale tags for browser dictation and speech synthesis.
+ * BMR language metadata uses standard BCP 47 locale tags for browser dictation and speech synthesis.
  * "auto" tells the model to answer in the language used by the customer’s latest message.
  */
 export const LANGUAGE_OPTIONS = [

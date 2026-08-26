@@ -129,12 +129,12 @@ describe("Companion workspace browser-like controls", () => {
     expect(workspace.startLogin).toHaveBeenCalledTimes(1);
   });
 
-  it("shows a clear Zynvori plan return state after successful Stripe Checkout", async () => {
+  it("shows a clear BMR plan return state after successful Stripe Checkout", async () => {
     window.history.replaceState({}, "", "/?checkout=success");
     render(<Home />);
 
     await waitFor(() => expect(workspace.toast.success).toHaveBeenCalledWith(
-      "Zynvori plan checkout complete",
+      "BMR plan checkout complete",
       expect.objectContaining({ description: expect.stringContaining("Stripe subscription") })
     ));
   });

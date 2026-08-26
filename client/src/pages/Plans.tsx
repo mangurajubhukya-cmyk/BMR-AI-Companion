@@ -1,6 +1,5 @@
 /**
- * Zynvori AI in-app pricing page: users compare transparent daily and monthly capacity before starting a secure checkout in the current browser tab.
- * The working brand remains subject to formal trademark clearance before public scale-up.
+ * BMR AI CHATBOART in-app pricing page: users compare transparent daily and monthly capacity before starting a secure checkout in the current browser tab.
  */
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -28,11 +27,10 @@ export default function Plans() {
       <div className="mx-auto max-w-6xl">
         <button type="button" onClick={() => setLocation("/")} className="mb-12 inline-flex items-center gap-2 font-mono text-[10px] tracking-[.12em] text-[#b7bdb2] transition-colors hover:text-[#c7f36b]"><ChevronLeft className="size-3.5" /> BACK TO WORKSPACE</button>
         <section className="max-w-3xl">
-          <p className="font-mono text-[10px] tracking-[.16em] text-[#c7f36b]">ZYNVORI AI / PLANS & CAPACITY</p>
+          <p className="font-mono text-[10px] tracking-[.16em] text-[#c7f36b]">BMR AI / PLANS & CAPACITY</p>
           <h1 className="mt-4 font-['Space_Grotesk'] text-4xl font-medium tracking-[-.06em] sm:text-6xl">Choose the amount of AI work you actually need.</h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-[#aeb3aa]">Use Zynvori in a modern browser from anywhere. Upgrade only when your client work, content, and customer workflows need more capacity. Your selected plan is visible before purchase and manageable in your profile.</p>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-[#aeb3aa]">Use BMR in a modern browser from anywhere. Upgrade only when your client work, content, and customer workflows need more capacity. Your selected plan is visible before purchase and manageable in your profile.</p>
         </section>
-
         <section className="mt-12 grid gap-4 lg:grid-cols-3">
           {plans.map(plan => (
             <article key={plan.id} className={`flex min-h-[420px] flex-col border p-6 ${"featured" in plan && plan.featured ? "border-[#c7f36b] bg-[#c7f36b]/[.06]" : "border-white/12 bg-white/[.025]"}`}>
@@ -44,8 +42,7 @@ export default function Plans() {
             </article>
           ))}
         </section>
-
-        {user?.role === "admin" ? <section className="mt-8 border border-amber-200/20 bg-amber-100/[.035] p-5"><p className="font-mono text-[10px] tracking-[.12em] text-amber-200">OWNER / GLOBAL PAYMENTS STATUS</p><h2 className="mt-2 font-['Space_Grotesk'] text-2xl">Worldwide browser access does not mean every merchant country has the same payment onboarding.</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-[#c8c7bd]">Customers can use Zynvori worldwide. However, the merchant’s Stripe account must be eligible for its own business country. This project is currently in a test sandbox: test cards do not move money and no payout bank account is connected.</p><ol className="mt-4 grid gap-3 text-sm leading-6 text-[#b9bdb4] sm:grid-cols-3"><li><span className="font-mono text-[#c7f36b]">01 / </span>Claim and test the sandbox without moving funds.</li><li><span className="font-mono text-[#c7f36b]">02 / </span>Complete country-specific Stripe live verification and add a payout bank account directly in Stripe.</li><li><span className="font-mono text-[#c7f36b]">03 / </span>Set live products, tax, refunds, portal rules, and webhooks before activating live keys.</li></ol></section> : null}
+        {user?.role === "admin" ? <section className="mt-8 border border-amber-200/20 bg-amber-100/[.035] p-5"><p className="font-mono text-[10px] tracking-[.12em] text-amber-200">OWNER / GLOBAL PAYMENTS STATUS</p><h2 className="mt-2 font-['Space_Grotesk'] text-2xl">Worldwide browser access does not mean every merchant country has the same payment onboarding.</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-[#c8c7bd]">Customers can use BMR worldwide. However, the merchant’s Stripe account must be eligible for its own business country. This project is currently in a test sandbox: test cards do not move money and no payout bank account is connected.</p><ol className="mt-4 grid gap-3 text-sm leading-6 text-[#b9bdb4] sm:grid-cols-3"><li><span className="font-mono text-[#c7f36b]">01 / </span>Claim and test the sandbox without moving funds.</li><li><span className="font-mono text-[#c7f36b]">02 / </span>Complete country-specific Stripe live verification and add a payout bank account directly in Stripe.</li><li><span className="font-mono text-[#c7f36b]">03 / </span>Set live products, tax, refunds, portal rules, and webhooks before activating live keys.</li></ol></section> : null}
         <p className="mt-7 font-mono text-[9px] leading-5 tracking-[.07em] text-[#81887d]">PRICES ARE IN USD. PAID PLANS RENEW MONTHLY UNTIL CANCELLED THROUGH YOUR SECURE PROFILE BILLING PORTAL. CREDIT-METERING POLICY MUST BE FINALIZED BEFORE LIVE CHARGES.</p>
       </div>
     </main>

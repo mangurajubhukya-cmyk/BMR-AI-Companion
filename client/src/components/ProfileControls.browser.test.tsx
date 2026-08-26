@@ -14,7 +14,7 @@ describe("ProfileControls", () => {
     render(<ProfileControls name="Mira" onUpgrade={onUpgrade} onManagePlan={vi.fn()} onLogout={vi.fn()} />);
 
     expect(screen.getByText("Free Trial")).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: /compare zynvori plans/i }));
+    await user.click(screen.getByRole("button", { name: "Plans" }));
 
     expect(onUpgrade).toHaveBeenCalledTimes(1);
   });
@@ -24,7 +24,7 @@ describe("ProfileControls", () => {
     const onManagePlan = vi.fn();
     render(<ProfileControls name="Mira" subscription={{ plan: "pro", status: "active", cancelAtPeriodEnd: false, hasBillingPortal: true }} onUpgrade={vi.fn()} onManagePlan={onManagePlan} onLogout={vi.fn()} />);
 
-    await user.click(screen.getByRole("button", { name: /manage or cancel plan/i }));
+    await user.click(screen.getByRole("button", { name: "Manage" }));
 
     expect(onManagePlan).toHaveBeenCalledTimes(1);
   });
